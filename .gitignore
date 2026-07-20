@@ -1,4 +1,1 @@
-# Binarios compilados (se generan en build)
-bin/mimir-macos-arm64
-bin/mimir-linux-x64
-bin/mimir-windows-x64.exe
+
