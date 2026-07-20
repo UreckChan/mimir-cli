@@ -131,10 +131,26 @@ const sections = [
         <span class="text-text-muted"># Uses Freebuff + Ollama by default.</span>
       </div>
     </div>
-    <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div class="border border-border-color p-4 bg-surface"><div class="text-label text-text-muted uppercase">macOS</div><div class="text-code text-primary mt-1">arm64</div></div>
-      <div class="border border-border-color p-4 bg-surface"><div class="text-label text-text-muted uppercase">Linux</div><div class="text-code text-primary mt-1">x86_64</div></div>
-      <div class="border border-border-color p-4 bg-surface"><div class="text-label text-text-muted uppercase">Windows</div><div class="text-code text-primary mt-1">x64</div></div>
+    <div class="mt-6 border border-border-color p-6 bg-surface-low">
+      <h3 class="font-headline text-lg text-primary uppercase mb-4">Direct Downloads</h3>
+      <p class="text-code text-text-secondary mb-4">Binaries for each platform. Download and run directly.</p>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <a href="https://github.com/UreckChan/mimir-cli/releases/download/v1.0.0/mimir-macos-arm64" class="block border border-border-color p-4 bg-background hover:border-primary hover:bg-surface-container transition-all group">
+          <div class="text-label text-text-muted uppercase">macOS</div>
+          <div class="text-code text-primary mt-1 group-hover:underline">mimir-macos-arm64</div>
+          <div class="text-code text-[10px] text-text-muted mt-1">Apple Silicon · 65 MB</div>
+        </a>
+        <a href="https://github.com/UreckChan/mimir-cli/releases/download/v1.0.0/mimir-linux-x64" class="block border border-border-color p-4 bg-background hover:border-primary hover:bg-surface-container transition-all group">
+          <div class="text-label text-text-muted uppercase">Linux</div>
+          <div class="text-code text-primary mt-1 group-hover:underline">mimir-linux-x64</div>
+          <div class="text-code text-[10px] text-text-muted mt-1">x86_64 · 94 MB</div>
+        </a>
+        <a href="https://github.com/UreckChan/mimir-cli/releases/download/v1.0.0/mimir-windows-x64.exe" class="block border border-border-color p-4 bg-background hover:border-primary hover:bg-surface-container transition-all group">
+          <div class="text-label text-text-muted uppercase">Windows</div>
+          <div class="text-code text-primary mt-1 group-hover:underline">mimir-windows-x64.exe</div>
+          <div class="text-code text-[10px] text-text-muted mt-1">x64 · 98 MB</div>
+        </a>
+      </div>
     </div>` },
   { id: 'quickstart', title: 'Quick Start', icon: '', html: `
     <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4">
