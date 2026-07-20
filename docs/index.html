@@ -53,9 +53,13 @@ tailwind.config = {
     <span class="font-headline text-lg text-primary-dim font-black tracking-tight glow uppercase">Mimir CLI</span>
     <span class="text-label text-text-muted uppercase hidden md:inline">v1.0.0</span>
   </div>
-  <div class="flex items-center gap-6">
-    <a href="https://github.com/UreckChan/mimir-cli" class="text-label text-text-muted hover:text-primary transition-colors">GitHub</a>
-    <a href="https://www.npmjs.com/package/mimir-cli" class="text-label text-text-muted hover:text-primary transition-colors">npm</a>
+  <div class="flex items-center gap-4">
+    <div class="flex border border-border-color">
+      <button id="lang-en" onclick="setLang('en')" class="px-3 py-1 text-label text-primary-dim bg-primary-dim/10 hover:bg-primary-dim/20 transition-colors" style="border-right:1px solid #3b4b37">EN</button>
+      <button id="lang-es" onclick="setLang('es')" class="px-3 py-1 text-label text-text-muted hover:text-primary-dim transition-colors">ES</button>
+    </div>
+    <a href="https://github.com/UreckChan/mimir-cli" class="text-label text-text-muted hover:text-primary transition-colors hidden md:inline">GitHub</a>
+    <a href="https://www.npmjs.com/package/mimir-cli" class="text-label text-text-muted hover:text-primary transition-colors hidden md:inline">npm</a>
     <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
   </div>
 </header>
@@ -91,28 +95,286 @@ tailwind.config = {
 </div>
 
 <script>
-const content = document.getElementById('content');
+const LANG_KEY = 'mimir-docs-lang';
+let currentLang = localStorage.getItem(LANG_KEY) || 'en';
 
-const sections = [
-  { id: 'hero', html: `
+const EN = {}, ES = {};
+
+// ─── HERO ───
+EN.hero_title = 'Mimir CLI';
+ES.hero_title = 'Mimir CLI';
+EN.hero_desc = 'Autonomous coding agent with <strong class="text-primary">4 specialized roles</strong> that work in a loop. No API key required. Works in your terminal with zero setup.';
+ES.hero_desc = 'Agente aut\u00f3nomo de c\u00f3digo con <strong class="text-primary">4 roles especializados</strong> que trabajan en ciclo. Sin API key. Funciona en tu terminal sin configuraci\u00f3n.';
+EN.hero_install = 'INSTALL';
+ES.hero_install = 'INSTALAR';
+EN.hero_source = 'VIEW SOURCE \u2192';
+ES.hero_source = 'VER C\u00d3DIGO \u2192';
+
+// ─── INSTALL ───
+EN.install_title = 'Install';
+ES.install_title = 'Instalaci\u00f3n';
+EN.install_npm = 'Install globally via npm';
+ES.install_npm = 'Instala globalmente via npm';
+EN.install_note = 'No API key required. No account needed. Uses Freebuff + Ollama by default.';
+ES.install_note = 'Sin API key. Sin cuenta. Usa Freebuff + Ollama por defecto.';
+EN.install_downloads = 'Direct Downloads';
+ES.install_downloads = 'Descargas Directas';
+EN.install_downloads_desc = 'Binaries for each platform. Download and run directly.';
+ES.install_downloads_desc = 'Binarios para cada plataforma. Descarga y ejecuta directamente.';
+
+// ─── QUICKSTART ───
+EN.qs_title = 'Quick Start';
+ES.qs_title = 'Inicio R\u00e1pido';
+EN.qs_chat = 'Chat mode';
+ES.qs_chat = 'Modo chat';
+EN.qs_project = 'Project mode (full 4-role loop)';
+ES.qs_project = 'Modo proyecto (ciclo completo de 4 roles)';
+EN.qs_sidecar = 'Sidecar mode';
+ES.qs_sidecar = 'Modo sidecar';
+
+// ─── ARCHITECTURE ───
+EN.arch_title = 'Architecture';
+ES.arch_title = 'Arquitectura';
+EN.arch_desc = 'Mimir runs on: <strong class="text-primary">PLAN \u2192 STEP \u2192 VERIFY \u2192 LEARN</strong>.';
+ES.arch_desc = 'Mimir ejecuta: <strong class="text-primary">PLAN \u2192 STEP \u2192 VERIFY \u2192 LEARN</strong>.';
+
+// ─── ROLES ───
+EN.roles_title = 'The 4 Roles';
+ES.roles_title = 'Los 4 Roles';
+EN.arch_role = 'Plans strategy. Breaks down goals into steps.';
+ES.arch_role = 'Planea la estrategia. Desglosa objetivos en pasos.';
+EN.build_role = 'Writes code, runs commands, installs deps.';
+ES.build_role = 'Escribe c\u00f3digo, ejecuta comandos, instala dependencias.';
+EN.insp_role = 'Verifies quality. Runs tests, checks code.';
+ES.insp_role = 'Verifica calidad. Ejecuta tests, revisa c\u00f3digo.';
+EN.chr_role = 'Documents lessons. Generates playbooks.';
+ES.chr_role = 'Documenta lecciones. Genera playbooks.';
+
+// ─── FLAGS ───
+EN.flags_title = 'CLI Flags';
+ES.flags_title = 'Flags de CLI';
+EN.flags = [
+  ['--goal', 'Your objective', '-'],
+  ['--cwd', 'Working directory', 'current dir'],
+  ['--budget', 'Max budget in USD', 'unlimited'],
+  ['--night', 'Queue mode for overnight', 'false'],
+  ['--no-sandbox', 'Skip git worktree isolation', 'false'],
+  ['--serve', 'WebSocket sidecar mode', 'false'],
+  ['--port', 'Sidecar port', '4317'],
+  ['--setup', 'Setup wizard', '-'],
+];
+ES.flags = [
+  ['--goal', 'Tu objetivo', '-'],
+  ['--cwd', 'Directorio de trabajo', 'directorio actual'],
+  ['--budget', 'Presupuesto m\u00e1ximo en USD', 'sin l\u00edmite'],
+  ['--night', 'Cola de metas nocturna', 'false'],
+  ['--no-sandbox', 'Sin aislamiento git worktree', 'false'],
+  ['--serve', 'Modo sidecar WebSocket', 'false'],
+  ['--port', 'Puerto del sidecar', '4317'],
+  ['--setup', 'Asistente de configuraci\u00f3n', '-'],
+];
+
+// ─── MODES ───
+EN.modes_title = 'Modes';
+ES.modes_title = 'Modos';
+EN.mode_chat = 'Direct response. No tools, no loop. Best for casual chat.';
+ES.mode_chat = 'Respuesta directa. Sin herramientas, sin ciclo. Ideal para charla casual.';
+EN.mode_plan = 'Full loop with detailed planning. Step-by-step execution.';
+ES.mode_plan = 'Ciclo completo con plan detallado. Ejecuci\u00f3n paso a paso.';
+EN.mode_build = 'Optimized for coding. Fast execution, shorter planning.';
+ES.mode_build = 'Optimizado para codificar. Ejecuci\u00f3n r\u00e1pida, plan corto.';
+
+// ─── PROVIDERS ───
+EN.providers_title = 'Supported Providers';
+ES.providers_title = 'Proveedores Soportados';
+
+// ─── TERMINAL ───
+EN.term_title = 'Terminal Adapters';
+ES.term_title = 'Adaptadores de Terminal';
+
+// ─── CONFIG ───
+EN.config_title = 'Configuration';
+ES.config_title = 'Configuraci\u00f3n';
+EN.config_keys = 'Set env vars or use Settings panel. Keys stored in system keychain.';
+ES.config_keys = 'Define variables de entorno o usa el panel de Ajustes. Las keys se guardan en el keychain del sistema.';
+EN.config_failover = 'Models tried in order. Falls back automatically on failure.';
+ES.config_failover = 'Modelos en orden de prioridad. Fallback autom\u00e1tico ante fallo.';
+
+// ─── SECURITY ───
+EN.security_title = 'Security';
+ES.security_title = 'Seguridad';
+EN.security_desc = 'API keys and credentials are automatically censored from logs and tool outputs before reaching the AI model.';
+ES.security_desc = 'Las API keys y credenciales se censuran autom\u00e1ticamente de los logs antes de llegar al modelo de IA.';
+
+// ─── VAULT ───
+EN.vault_title = 'Alexandria Vault';
+ES.vault_title = 'B\u00f3veda de Alexandria';
+EN.vault_desc = 'Every lesson learned is stored in a persistent local vault with FTS5 search. Past solutions are recalled automatically when similar tasks appear.';
+ES.vault_desc = 'Cada lecci\u00f3n aprendida se guarda en una b\u00f3veda persistente con b\u00fasqueda FTS5. Las soluciones previas se recuerdan autom\u00e1ticamente cuando aparecen tareas similares.';
+
+// ─── SIDEBAR ───
+EN.sidebar = ['Install', 'Quick Start', 'Architecture', '4 Roles', 'CLI Flags', 'Modes', 'Providers', 'Terminal Adapters', 'Configuration', 'Security', 'Vault'];
+ES.sidebar = ['Instalar', 'Inicio R\u00e1pido', 'Arquitectura', '4 Roles', 'Flags CLI', 'Modos', 'Proveedores', 'Adaptadores Terminal', 'Configuraci\u00f3n', 'Seguridad', 'Vault'];
+
+const sidebarLinks = ['install','quickstart','architecture','roles','flags','modes','providers','terminal','config','security','vault'];
+
+function renderContent(lang) {
+  const t = lang === 'en' ? EN : ES;
+  const sb = lang === 'en' ? EN.sidebar : ES.sidebar;
+  const nav = document.getElementById('sidebar-nav');
+  if (nav) {
+    nav.innerHTML = sb.map((label, i) =>
+      `<a href="#${sidebarLinks[i]}" class="block px-3 py-2 text-code text-text-secondary hover:bg-surface-high hover:text-primary">${label}</a>`
+    ).join('');
+  }
+
+  document.getElementById('content').innerHTML = `
     <section class="mb-12 border border-border-color p-8 md:p-12 relative overflow-hidden">
       <div class="absolute top-0 right-0 text-8xl text-surface-high font-headline font-black opacity-20 select-none">01</div>
       <div class="relative z-10">
-        <h1 class="font-headline text-headline-xl text-primary-dim font-black uppercase tracking-tight glow">Mimir CLI</h1>
-        <p class="text-body text-text-secondary max-w-2xl mt-4 leading-relaxed">
-          Autonomous coding agent with <strong class="text-primary">4 specialized roles</strong> that work in a loop.
-          No API key required. Works in your terminal with zero setup.
-        </p>
+        <h1 class="font-headline text-headline-xl text-primary-dim font-black uppercase tracking-tight glow">${t.hero_title}</h1>
+        <p class="text-body text-text-secondary max-w-2xl mt-4 leading-relaxed">${t.hero_desc}</p>
         <div class="flex gap-4 mt-8 flex-wrap">
-          <a href="#install" class="px-6 py-3 border border-primary text-primary font-headline font-bold text-sm hover:bg-primary hover:text-black transition-all">INSTALL</a>
-          <a href="https://github.com/UreckChan/mimir-cli" class="px-6 py-3 border border-border-color text-text-secondary text-code hover:border-primary hover:text-primary transition-all">VIEW SOURCE →</a>
+          <a href="#install" class="px-6 py-3 border border-primary text-primary font-headline font-bold text-sm hover:bg-primary hover:text-black transition-all">${t.hero_install}</a>
+          <a href="https://github.com/UreckChan/mimir-cli" class="px-6 py-3 border border-border-color text-text-secondary text-code hover:border-primary hover:text-primary transition-all">${t.hero_source}</a>
         </div>
         <div class="flex gap-4 mt-6">
           <span class="px-3 py-1 border border-primary-dim text-primary-dim text-label bg-primary-dim/5">PROTOCOL: v1.0.0</span>
           <span class="px-3 py-1 border border-warning text-warning text-label bg-warning/5">STATUS: STABLE</span>
         </div>
       </div>
-    </section>` },
+    </section>
+
+    <section id="install" class="mb-16 scroll-mt-24">
+      <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4"><span class="w-1 h-6 bg-primary"></span> ${t.install_title}</h2>
+      <div class="border border-border-color bg-surface overflow-hidden">
+        <div class="bg-surface-high px-4 py-2 border-b border-border-color flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-error"></span><span class="w-2 h-2 rounded-full bg-warning"></span><span class="w-2 h-2 rounded-full bg-primary"></span>
+          <span class="ml-4 text-label text-text-muted">terminal</span>
+        </div>
+        <div class="p-6 text-code text-primary">
+          <span class="text-text-muted"># ${t.install_npm}</span><br/>
+          npm install -g mimir-cli<br/><br/>
+          <span class="text-text-muted"># ${t.install_note}</span>
+        </div>
+      </div>
+      <div class="mt-6 border border-border-color p-6 bg-surface-low">
+        <h3 class="font-headline text-lg text-primary uppercase mb-4">${t.install_downloads}</h3>
+        <p class="text-code text-text-secondary mb-4">${t.install_downloads_desc}</p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <a href="https://github.com/UreckChan/mimir-cli/releases/download/v1.0.0/mimir-macos-arm64" class="block border border-border-color p-4 bg-background hover:border-primary hover:bg-surface-container transition-all group">
+            <div class="text-label text-text-muted uppercase">macOS</div>
+            <div class="text-code text-primary mt-1 group-hover:underline">mimir-macos-arm64</div>
+            <div class="text-code text-[10px] text-text-muted mt-1">Apple Silicon · 65 MB</div>
+          </a>
+          <a href="https://github.com/UreckChan/mimir-cli/releases/download/v1.0.0/mimir-linux-x64" class="block border border-border-color p-4 bg-background hover:border-primary hover:bg-surface-container transition-all group">
+            <div class="text-label text-text-muted uppercase">Linux</div>
+            <div class="text-code text-primary mt-1 group-hover:underline">mimir-linux-x64</div>
+            <div class="text-code text-[10px] text-text-muted mt-1">x86_64 · 94 MB</div>
+          </a>
+          <a href="https://github.com/UreckChan/mimir-cli/releases/download/v1.0.0/mimir-windows-x64.exe" class="block border border-border-color p-4 bg-background hover:border-primary hover:bg-surface-container transition-all group">
+            <div class="text-label text-text-muted uppercase">Windows</div>
+            <div class="text-code text-primary mt-1 group-hover:underline">mimir-windows-x64.exe</div>
+            <div class="text-code text-[10px] text-text-muted mt-1">x64 · 98 MB</div>
+          </a>
+        </div>
+      </div>
+    </section>
+
+    <section id="quickstart" class="mb-16 scroll-mt-24">
+      <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4"><span class="w-1 h-6 bg-primary"></span> ${t.qs_title}</h2>
+      <div class="space-y-4">
+        <div class="border border-border-color p-5 bg-surface-low"><div class="text-label text-text-muted uppercase mb-2">${t.qs_chat}</div><code class="text-code text-primary">mimir --goal "Hello! What can you do?"</code></div>
+        <div class="border border-border-color p-5 bg-surface-low"><div class="text-label text-text-muted uppercase mb-2">${t.qs_project}</div><code class="text-code text-primary">mimir --goal "Create a CLI tool" --cwd /my/project</code></div>
+        <div class="border border-border-color p-5 bg-surface-low"><div class="text-label text-text-muted uppercase mb-2">${t.qs_sidecar}</div><code class="text-code text-primary">mimir --serve</code></div>
+      </div>
+    </section>
+
+    <section id="architecture" class="mb-16 scroll-mt-24">
+      <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4"><span class="w-1 h-6 bg-primary"></span> ${t.arch_title}</h2>
+      <div class="border border-border-color bg-surface p-6">
+        <p class="text-body text-text-secondary mb-6">${t.arch_desc}</p>
+        <div class="text-code bg-background p-4 border border-border-color overflow-x-auto whitespace-pre text-primary">
++----------------------+\n|       Mimir          |\n+----------+-----------+\n           |\n+----------+-----------+\nv          v           v\n+---------+ +---------+ +-----------+\n|Architect| | Builder | | Inspector |\n+----+----+ +----+----+ +-----+-----+\n     |           |             |\n     +-----------+-------------+\n                 v\n          +--------------+\n          | ModelRouter  |\n          +------+-------+\n                 |\n       +---------+---------+\n       v         v         v\n   +--------+ +-------+ +-------+\n   |Freebuff| |Ollama | | Cloud |\n   +--------+ +-------+ +-------+</div>
+      </div>
+    </section>
+
+    <section id="roles" class="mb-16 scroll-mt-24">
+      <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4"><span class="w-1 h-6 bg-primary"></span> ${t.roles_title}</h2>
+      <div class="grid grid-cols-1 md:grid-cols-4 gap-0 border border-border-color">
+        <div class="p-6 border-r border-b md:border-b-0 border-border-color bg-surface hover:bg-surface-container"><span class="text-label text-primary-dim">ROLE_01</span><h3 class="font-headline text-xl text-[#38bdf8] font-black uppercase mt-2">Architect</h3><p class="text-code text-text-secondary mt-2">${t.arch_role}</p></div>
+        <div class="p-6 border-r border-border-color bg-surface hover:bg-surface-container"><span class="text-label text-primary-dim">ROLE_02</span><h3 class="font-headline text-xl text-[#38bdf8] font-black uppercase mt-2">Builder</h3><p class="text-code text-text-secondary mt-2">${t.build_role}</p></div>
+        <div class="p-6 border-r border-border-color bg-surface hover:bg-surface-container"><span class="text-label text-primary-dim">ROLE_03</span><h3 class="font-headline text-xl text-[#ff7b00] font-black uppercase mt-2">Inspector</h3><p class="text-code text-text-secondary mt-2">${t.insp_role}</p></div>
+        <div class="p-6 bg-surface hover:bg-surface-container"><span class="text-label text-primary-dim">ROLE_04</span><h3 class="font-headline text-xl text-[#b9ccb2] font-black uppercase mt-2">Chronicler</h3><p class="text-code text-text-secondary mt-2">${t.chr_role}</p></div>
+      </div>
+    </section>
+
+    <section id="flags" class="mb-16 scroll-mt-24">
+      <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4"><span class="w-1 h-6 bg-primary"></span> ${t.flags_title}</h2>
+      <div class="border border-border-color">
+        <div class="grid grid-cols-3 bg-surface-high text-label text-text-muted uppercase p-3 border-b border-border-color"><div>Flag</div><div>Description</div><div>Default</div></div>
+        <div class="divide-y divide-border-color text-code">
+          ${t.flags.map(f => `<div class="grid grid-cols-3 p-3 hover:bg-surface-container"><span class="text-primary">${f[0]}</span><span class="text-text-secondary">${f[1]}</span><span class="text-text-muted">${f[2]}</span></div>`).join('')}
+        </div>
+      </div>
+    </section>
+
+    <section id="modes" class="mb-16 scroll-mt-24">
+      <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4"><span class="w-1 h-6 bg-primary"></span> ${t.modes_title}</h2>
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-0 border border-border-color">
+        <div class="p-6 border-r border-border-color bg-surface"><span class="text-label text-primary-dim">CHAT</span><p class="text-code text-text-secondary mt-2">${t.mode_chat}</p></div>
+        <div class="p-6 border-r border-border-color bg-surface"><span class="text-label text-warning">PLAN</span><p class="text-code text-text-secondary mt-2">${t.mode_plan}</p></div>
+        <div class="p-6 bg-surface"><span class="text-label text-accent-orange">BUILD</span><p class="text-code text-text-secondary mt-2">${t.mode_build}</p></div>
+      </div>
+    </section>
+
+    <section id="providers" class="mb-16 scroll-mt-24">
+      <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4"><span class="w-1 h-6 bg-primary"></span> ${t.providers_title}</h2>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-0 border border-border-color" id="providers-grid"></div>
+    </section>
+
+    <section id="terminal" class="mb-16 scroll-mt-24">
+      <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4"><span class="w-1 h-6 bg-primary"></span> ${t.term_title}</h2>
+      <div class="border border-border-color">
+        <div class="grid grid-cols-4 bg-surface-high text-label text-text-muted uppercase p-3 border-b border-border-color"><div>Terminal</div><div>Install</div><div>Subscription</div><div>Default</div></div>
+        <div class="divide-y divide-border-color text-code" id="terminal-grid"></div>
+      </div>
+    </section>
+
+    <section id="config" class="mb-16 scroll-mt-24">
+      <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4"><span class="w-1 h-6 bg-primary"></span> ${t.config_title}</h2>
+      <div class="space-y-6">
+        <div class="border border-border-color p-6 bg-surface">
+          <h3 class="font-headline text-lg text-primary uppercase mb-3">API Keys</h3>
+          <p class="text-body text-text-secondary mb-4">${t.config_keys}</p>
+          <div class="bg-background p-4 border border-border-color text-code text-primary">export ANTHROPIC_API_KEY=sk-...<br/>export OPENAI_API_KEY=sk-...<br/>export DEEPSEEK_API_KEY=sk-...</div>
+        </div>
+        <div class="border border-border-color p-6 bg-surface">
+          <h3 class="font-headline text-lg text-primary uppercase mb-3">Priority List</h3>
+          <p class="text-body text-text-secondary mb-4">${t.config_failover}</p>
+          <div class="bg-background p-4 border border-border-color text-code">1. deepseek/deepseek-v4-flash<br/>2. anthropic/claude-sonnet-5<br/>3. ollama/llama3.2:3b <span class="text-text-muted"># free</span></div>
+        </div>
+      </div>
+    </section>
+
+    <section id="security" class="mb-16 scroll-mt-24">
+      <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4"><span class="w-1 h-6 bg-primary"></span> ${t.security_title}</h2>
+      <div class="border border-border-color p-4 bg-surface"><p class="text-code text-text-secondary">${t.security_desc}</p></div>
+    </section>
+
+    <section id="vault" class="mb-16 scroll-mt-24">
+      <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4"><span class="w-1 h-6 bg-primary"></span> ${t.vault_title}</h2>
+      <p class="text-body text-text-secondary mb-6">${t.vault_desc}</p>
+      <div class="border border-border-color p-6 bg-surface">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div class="border border-border-color p-4 bg-surface-low hover:border-primary cursor-pointer"><div class="text-label text-text-muted">LESSON</div><div class="text-code text-primary mt-1">Auth proxies need middleware</div></div>
+          <div class="border border-border-color p-4 bg-surface-low hover:border-primary cursor-pointer"><div class="text-label text-text-muted">PLAYBOOK</div><div class="text-code text-primary mt-1">Deploy proxy infrastructure</div></div>
+          <div class="border border-border-color p-4 bg-surface-low hover:border-primary cursor-pointer"><div class="text-label text-text-muted">SESSION</div><div class="text-code text-primary mt-1">Fix cold start latency</div></div>
+        </div>
+      </div>
+    </section>
+  `;
+}
   { id: 'install', title: 'Install', icon: '', html: `
     <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4">
       <span class="w-1 h-6 bg-primary"></span> Install
@@ -344,33 +606,40 @@ const terminals = [
   ["Aider", "pip install aider-chat", "No", "-"],
 ];
 
-// Build content
-let mainHtml = '';
-for (const s of sections) {
-  mainHtml += `<section id="${s.id}" class="mb-16 scroll-mt-24">${s.html}</section>`;
+const providers = [
+  ["Freebuff", "Cloud", "Free (ads)", "#00FF41"],
+  ["Ollama", "Local", "Free", "#00FF41"],
+  ["Anthropic", "Cloud", "API key", "#38bdf8"],
+  ["OpenAI", "Cloud", "API key", "#38bdf8"],
+  ["Google", "Cloud", "API key", "#38bdf8"],
+  ["DeepSeek", "Cloud", "API key", "#ff7b00"],
+  ["xAI (Grok)", "Cloud", "API key", "#ff7b00"],
+  ["Custom", "Any", "Configurable", "#b9ccb2"],
+];
+const terminals = [
+  ["Bash", "Built-in", "No", "\u2713"],
+  ["Claude Code", "npm i -g @anthropic-ai/claude-code", "Claude sub", "-"],
+  ["Codex CLI", "npm i -g @openai/codex", "OpenAI", "-"],
+  ["OpenCode", "npm i -g opencode", "No", "-"],
+  ["Aider", "pip install aider-chat", "No", "-"],
+];
+
+function setLang(lang) {
+  currentLang = lang;
+  try { localStorage.setItem(LANG_KEY, lang); } catch {}
+  document.getElementById('lang-en').style.background = lang === 'en' ? 'rgba(0,230,57,0.1)' : 'transparent';
+  document.getElementById('lang-en').style.color = lang === 'en' ? '#00e639' : '#6b6b80';
+  document.getElementById('lang-es').style.background = lang === 'es' ? 'rgba(0,230,57,0.1)' : 'transparent';
+  document.getElementById('lang-es').style.color = lang === 'es' ? '#00e639' : '#6b6b80';
+  renderContent(lang);
+  // Re-render provider and terminal grids after content update
+  const pg = document.getElementById('providers-grid');
+  if (pg) pg.innerHTML = providers.map(p => `<div class="p-4 border-r border-b border-border-color bg-surface hover:bg-surface-container"><div class="text-code font-bold" style="color:${p[3]}">${p[0]}</div><div class="text-label text-text-muted uppercase mt-1">${p[1]}</div><div class="text-code text-text-secondary text-[10px]">${p[2]}</div></div>`).join('');
+  const tg = document.getElementById('terminal-grid');
+  if (tg) tg.innerHTML = terminals.map(t => `<div class="grid grid-cols-4 p-3 hover:bg-surface-container"><span class="text-primary">${t[0]}</span><span class="text-text-secondary text-[11px]">${t[1]}</span><span class="text-text-muted text-[11px]">${t[2]}</span><span class="${t[3] === '\u2713' ? 'text-primary' : 'text-text-muted'}">${t[3]}</span></div>`).join('');
 }
-content.innerHTML = mainHtml;
 
-// Providers grid
-const pg = document.getElementById('providers-grid');
-pg.innerHTML = providers.map(p => `
-  <div class="p-4 border-r border-b border-border-color bg-surface hover:bg-surface-container">
-    <div class="text-code font-bold" style="color:${p[3]}">${p[0]}</div>
-    <div class="text-label text-text-muted uppercase mt-1">${p[1]}</div>
-    <div class="text-code text-text-secondary text-[10px]">${p[2]}</div>
-  </div>
-`).join('');
-
-// Terminal grid
-const tg = document.getElementById('terminal-grid');
-tg.innerHTML = terminals.map(t => `
-  <div class="grid grid-cols-4 p-3 hover:bg-surface-container">
-    <span class="text-primary">${t[0]}</span>
-    <span class="text-text-secondary text-[11px]">${t[1]}</span>
-    <span class="text-text-muted text-[11px]">${t[2]}</span>
-    <span class="${t[3] === '\u2713' ? 'text-primary' : 'text-text-muted'}">${t[3]}</span>
-  </div>
-`).join('');
+setLang(currentLang);
 </script>
 </body>
 </html>
