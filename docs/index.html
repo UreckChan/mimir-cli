@@ -31,12 +31,13 @@
   .lang-btn { padding: 2px 8px; font-size: 10px; font-family: 'JetBrains Mono', monospace; cursor: pointer; border: 1px solid var(--border); background: transparent; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
   .lang-btn.active { background: rgba(0,230,57,0.1); color: var(--primary-dim); }
   .lang-btn:first-child { border-right: none; }
-  .sidebar { position: fixed; top: 56px; left: 0; width: 220px; height: calc(100vh - 56px); background: var(--surface-low); border-right: 1px solid var(--border); overflow-y: auto; z-index: 50; transition: transform 0.2s; }
-  .sidebar .brand { padding: 16px; border-bottom: 1px solid var(--border); }
+  .sidebar { position: fixed; top: 56px; left: 0; width: 220px; height: calc(100vh - 56px); background: var(--surface-low); border-right: 1px solid var(--border); z-index: 50; transition: transform 0.2s; display: flex; flex-direction: column; }
+  .sidebar .brand { padding: 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
   .sidebar .brand .sub { font-size: 9px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
+  .sidebar #sidebar-links { flex: 1; overflow-y: auto; }
   .sidebar a { display: block; padding: 8px 16px; font-size: 11px; color: var(--text-secondary); transition: all 0.1s; }
   .sidebar a:hover { background: var(--surface-high); color: var(--primary-dim); text-decoration: none; }
-  .sidebar .footer { padding: 12px 16px; border-top: 1px solid var(--border); font-size: 10px; color: var(--text-muted); }
+  .sidebar .footer { padding: 12px 16px; border-top: 1px solid var(--border); font-size: 10px; color: var(--text-muted); flex-shrink: 0; }
   .main { margin-left: 220px; padding: 24px; max-width: 960px; min-height: calc(100vh - 56px); padding-bottom: 80px; }
   .hero { border: 1px solid var(--border); padding: 40px; margin-bottom: 48px; position: relative; overflow: hidden; }
   .hero h2 { font-size: 40px; font-weight: 900; text-transform: uppercase; color: var(--primary-dim); }
