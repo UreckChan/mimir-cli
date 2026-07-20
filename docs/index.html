@@ -1,654 +1,403 @@
 <!DOCTYPE html>
 <html class="dark" lang="en">
 <head>
-<meta charset="utf-8"/>
-<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mímir CLI — Autonomous Coding Agent</title>
-<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
-<script>
-tailwind.config = {
-  darkMode: "class",
-  theme: {
-    extend: {
-      colors: {
-        primary: "#00FF41", "primary-dim": "#00e639", "primary-container": "#00ff41",
-        background: "#0a0a0a", surface: "#131313", "surface-low": "#1c1b1b",
-        "surface-container": "#201f1f", "surface-high": "#2a2a2a", "surface-highest": "#353534",
-        "border-color": "#3b4b37", "text-primary": "#e5e2e1", "text-secondary": "#b9ccb2",
-        "text-muted": "#6b6b80", "accent-orange": "#ff7b00", warning: "#ffcc00", error: "#ef4444",
-      },
-      fontFamily: { headline: ["Montserrat", "sans-serif"], mono: ["JetBrains Mono", "monospace"] },
-      fontSize: {
-        "headline-xl": ["48px", { lineHeight: "1.1", fontWeight: "900" }],
-        "headline-lg": ["28px", { lineHeight: "1.2", fontWeight: "800" }],
-        body: ["14px", { lineHeight: "1.6" }],
-        code: ["12px", { lineHeight: "1.5", fontWeight: "500" }],
-        label: ["10px", { lineHeight: "1", letterSpacing: "0.1em", fontWeight: "700" }],
-      },
-    },
-  },
-};
-</script>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
 <style>
-  body { background: #0a0a0a; color: #b9ccb2; font-family: 'JetBrains Mono', monospace; }
-  .scanlines { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.05) 50%); background-size: 100% 4px; pointer-events: none; z-index: 100; }
-  .glow { text-shadow: 0 0 8px rgba(0,230,57,0.4); }
+  :root {
+    --primary: #00FF41; --primary-dim: #00e639; --bg: #0a0a0a; --surface: #131313;
+    --surface-low: #1c1b1b; --surface-container: #201f1f; --surface-high: #2a2a2a;
+    --border: #3b4b37; --text: #e5e2e1; --text-secondary: #b9ccb2; --text-muted: #6b6b80;
+    --accent: #ff7b00; --warning: #ffcc00; --error: #ef4444; --arch: #38bdf8; --insp: #ff7b00;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { background: var(--bg); color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; }
+  .scanlines { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.05) 50%); background-size: 100% 4px; pointer-events: none; z-index: 999; }
   ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { background: #0a0a0a; }
-  ::-webkit-scrollbar-thumb { background: #3b4b37; }
-  ::-webkit-scrollbar-thumb:hover { background: #00e639; }
-  @keyframes blink { 50% { opacity: 0; } }
-  .cursor-blink { animation: blink 1s step-end infinite; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); }
+  ::-webkit-scrollbar-thumb:hover { background: var(--primary-dim); }
+  h1, h2, h3, h4 { font-family: 'Montserrat', sans-serif; color: var(--text); }
+  .glow { text-shadow: 0 0 8px rgba(0,230,57,0.4); }
+  a { color: var(--primary-dim); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  code { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+  .header { position: fixed; top: 0; width: 100%; height: 56px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 16px; z-index: 100; gap: 12px; }
+  .header .logo { width: 28px; height: 28px; border: 1px solid var(--primary); display: flex; align-items: center; justify-content: center; font-family: 'Montserrat', sans-serif; font-weight: 900; font-size: 14px; color: var(--primary); }
+  .header h1 { font-size: 16px; font-weight: 900; text-transform: uppercase; color: var(--primary-dim); }
+  .header .version { font-size: 10px; color: var(--text-muted); text-transform: uppercase; }
+  .lang-btn { padding: 2px 8px; font-size: 10px; font-family: 'JetBrains Mono', monospace; cursor: pointer; border: 1px solid var(--border); background: transparent; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
+  .lang-btn.active { background: rgba(0,230,57,0.1); color: var(--primary-dim); }
+  .lang-btn:first-child { border-right: none; }
+  .sidebar { position: fixed; top: 56px; left: 0; width: 220px; height: calc(100vh - 56px); background: var(--surface-low); border-right: 1px solid var(--border); overflow-y: auto; z-index: 50; transition: transform 0.2s; }
+  .sidebar .brand { padding: 16px; border-bottom: 1px solid var(--border); }
+  .sidebar .brand .sub { font-size: 9px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
+  .sidebar a { display: block; padding: 8px 16px; font-size: 11px; color: var(--text-secondary); transition: all 0.1s; }
+  .sidebar a:hover { background: var(--surface-high); color: var(--primary-dim); text-decoration: none; }
+  .sidebar .footer { padding: 12px 16px; border-top: 1px solid var(--border); font-size: 10px; color: var(--text-muted); }
+  .main { margin-left: 220px; padding: 24px; max-width: 960px; min-height: calc(100vh - 56px); padding-bottom: 80px; }
+  .hero { border: 1px solid var(--border); padding: 40px; margin-bottom: 48px; position: relative; overflow: hidden; }
+  .hero h2 { font-size: 40px; font-weight: 900; text-transform: uppercase; color: var(--primary-dim); }
+  .hero p { font-size: 14px; color: var(--text-secondary); max-width: 600px; margin-top: 12px; line-height: 1.6; }
+  .hero .actions { margin-top: 24px; display: flex; gap: 12px; flex-wrap: wrap; }
+  .btn { padding: 10px 24px; font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer; border: none; transition: all 0.15s; }
+  .btn-primary { background: var(--primary); color: #000; }
+  .btn-primary:hover { opacity: 0.8; }
+  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); }
+  .btn-outline:hover { border-color: var(--primary); color: var(--primary-dim); }
+  .badge { display: inline-block; padding: 4px 10px; font-size: 9px; font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 0.1em; border: 1px solid; margin-right: 8px; margin-top: 16px; }
+  .badge-green { border-color: var(--primary-dim); color: var(--primary-dim); background: rgba(0,230,57,0.05); }
+  .badge-yellow { border-color: var(--warning); color: var(--warning); background: rgba(255,204,0,0.05); }
+  .section { margin-bottom: 64px; scroll-margin-top: 72px; }
+  .section-title { font-size: 24px; font-weight: 800; text-transform: uppercase; color: var(--primary-dim); margin-bottom: 20px; display: flex; align-items: center; gap: 12px; }
+  .section-title .bar { width: 4px; height: 24px; background: var(--primary); display: inline-block; }
+  .card { border: 1px solid var(--border); background: var(--surface); padding: 16px; margin-bottom: 12px; }
+  .card-header { background: var(--surface-high); padding: 10px 16px; border-bottom: 1px solid var(--border); font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
+  .terminal { background: var(--bg); border: 1px solid var(--border); padding: 16px; font-size: 12px; color: var(--primary); overflow-x: auto; }
+  .terminal .comment { color: var(--text-muted); }
+  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border: 1px solid var(--border); }
+  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border: 1px solid var(--border); }
+  .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0; border: 1px solid var(--border); }
+  .grid-item { padding: 16px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
+  .grid-item:hover { background: var(--surface-container); }
+  .label { font-size: 9px; font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); }
+  table { width: 100%; border-collapse: collapse; border: 1px solid var(--border); font-size: 12px; }
+  th { background: var(--surface-high); padding: 8px 12px; text-align: left; font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); border-bottom: 1px solid var(--border); }
+  td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
+  tr:hover { background: var(--surface-container); }
+  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 24px; }
+  .footer .col h4 { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 12px; }
+  .footer .col a { display: block; font-size: 11px; margin-bottom: 6px; }
+  [data-lang] { display: none; }
+  [data-lang="en"] { display: block; }
+  html[lang="es"] [data-lang="en"] { display: none; }
+  html[lang="es"] [data-lang="es"] { display: block; }
+  .mobile-menu-btn { display: none; position: fixed; bottom: 16px; right: 16px; width: 48px; height: 48px; background: var(--primary); color: #000; border: none; font-size: 20px; font-weight: 900; cursor: pointer; z-index: 200; box-shadow: 0 0 20px rgba(0,255,65,0.3); font-family: 'Montserrat', sans-serif; }
+  @media (max-width: 767px) {
+    .sidebar { transform: translateX(-100%); }
+    .sidebar.open { transform: translateX(0); }
+    .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 49; }
+    .sidebar-overlay.open { display: block; }
+    .main { margin-left: 0; padding: 16px; }
+    .hero h2 { font-size: 28px; }
+    .grid-3, .grid-4 { grid-template-columns: 1fr; }
+    .grid-2 { grid-template-columns: 1fr; }
+    .mobile-menu-btn { display: flex; align-items: center; justify-content: center; }
+  }
+  .mt-2 { margin-top: 8px; }
+  .mt-4 { margin-top: 16px; }
+  .mt-6 { margin-top: 24px; }
+  .mb-4 { margin-bottom: 16px; }
+  .gap-4 { gap: 16px; }
+  .flex { display: flex; }
+  .flex-wrap { flex-wrap: wrap; }
+  .items-center { align-items: center; }
+  .text-primary { color: var(--primary); }
+  .text-secondary { color: var(--text-secondary); }
+  .text-muted { color: var(--text-muted); }
+  .text-arch { color: var(--arch); }
+  .text-insp { color: var(--insp); }
 </style>
 </head>
-<body class="overflow-x-hidden selection:bg-primary-container selection:text-black">
+<body>
 <div class="scanlines"></div>
-
-<header class="fixed top-0 w-full h-16 border-b border-border-color bg-surface/80 backdrop-blur z-50 flex items-center px-6 justify-between">
-  <div class="flex items-center gap-4">
-    <div class="w-8 h-8 border border-primary flex items-center justify-center">
-      <span class="text-primary font-headline font-black text-sm">M</span>
-    </div>
-    <span class="font-headline text-lg text-primary-dim font-black tracking-tight glow uppercase">Mimir CLI</span>
-    <span class="text-label text-text-muted uppercase hidden md:inline">v1.0.0</span>
+<div class="header">
+  <div class="logo">ᛗ</div>
+  <h1>Mimir CLI</h1>
+  <span class="version">v1.0.0</span>
+  <div style="flex:1"></div>
+  <div>
+    <button class="lang-btn" onclick="setLang('en')" id="lben">EN</button>
+    <button class="lang-btn" onclick="setLang('es')" id="lbes">ES</button>
   </div>
-  <div class="flex items-center gap-4">
-    <div class="flex border border-border-color">
-      <button id="lang-en" onclick="setLang('en')" class="px-3 py-1 text-label text-primary-dim bg-primary-dim/10 hover:bg-primary-dim/20 transition-colors" style="border-right:1px solid #3b4b37">EN</button>
-      <button id="lang-es" onclick="setLang('es')" class="px-3 py-1 text-label text-text-muted hover:text-primary-dim transition-colors">ES</button>
-    </div>
-    <a href="https://github.com/UreckChan/mimir-cli" class="text-label text-text-muted hover:text-primary transition-colors hidden md:inline">GitHub</a>
-    <a href="https://www.npmjs.com/package/mimir-cli" class="text-label text-text-muted hover:text-primary transition-colors hidden md:inline">npm</a>
-    <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+</div>
+
+<div class="sidebar" id="sidebar">
+  <div class="brand">
+    <div style="font-size:10px;color:var(--primary-dim);letter-spacing:0.1em;text-transform:uppercase">MIMIR_V1.0</div>
+    <div class="sub">Terminal Active <span style="animation:blink 1s step-end infinite">_</span></div>
   </div>
-</header>
+  <div id="sidebar-links">
+    <div class="label" style="padding:12px 16px 4px" data-lang="en">Documentation</div>
+    <div class="label" style="padding:12px 16px 4px" data-lang="es">Documentaci&oacute;n</div>
+    <a href="#install" data-lang="en">Install</a>
+    <a href="#install" data-lang="es">Instalar</a>
+    <a href="#quickstart" data-lang="en">Quick Start</a>
+    <a href="#quickstart" data-lang="es">Inicio R&aacute;pido</a>
+    <a href="#architecture" data-lang="en">Architecture</a>
+    <a href="#architecture" data-lang="es">Arquitectura</a>
+    <a href="#roles">4 Roles</a>
+    <a href="#flags" data-lang="en">CLI Flags</a>
+    <a href="#flags" data-lang="es">Flags CLI</a>
+    <a href="#modes">Modes</a>
+    <a href="#providers">Providers</a>
+    <a href="#terminal" data-lang="en">Terminal Adapters</a>
+    <a href="#terminal" data-lang="es">Adaptadores</a>
+    <a href="#config" data-lang="en">Configuration</a>
+    <a href="#config" data-lang="es">Configuraci&oacute;n</a>
+    <a href="#security" data-lang="en">Security</a>
+    <a href="#security" data-lang="es">Seguridad</a>
+    <a href="#vault">Vault</a>
+  </div>
+  <div class="footer"><a href="https://github.com/UreckChan">@UreckChan</a></div>
+</div>
+<div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+<button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
 
-<div class="flex pt-16 min-h-screen">
-  <!-- Mobile sidebar toggle -->
-  <button id="menu-btn" onclick="toggleMobileMenu()" class="fixed bottom-4 right-4 z-50 w-12 h-12 bg-primary text-black font-headline font-black text-xl flex items-center justify-center md:hidden border border-primary shadow-lg" style="box-shadow:0 0 20px rgba(0,255,65,0.3)">☰</button>
+<div class="main" id="main">
 
-  <aside id="sidebar" class="w-64 border-r border-border-color bg-surface-low flex flex-col fixed h-[calc(100vh-64px)] top-16 overflow-y-auto z-40 transition-transform duration-200 md:translate-x-0 -translate-x-full md:flex">
-    <div class="p-6 border-b border-border-color">
-      <div class="text-label text-primary-dim mb-1">MIMIR_V1.0</div>
-      <div class="text-[9px] text-text-muted uppercase tracking-widest">Terminal Active <span class="cursor-blink">_</span></div>
+<!-- HERO -->
+<div class="hero">
+  <div style="position:absolute;top:0;right:20px;font-size:100px;color:var(--surface-high);font-family:Montserrat,sans-serif;font-weight:900;opacity:0.2;pointer-events:none">01</div>
+  <h2 data-lang="en">Mimir CLI</h2>
+  <h2 data-lang="es">Mimir CLI</h2>
+  <p data-lang="en">Autonomous coding agent with <strong class="text-primary">4 specialized roles</strong> that work in a loop. No API key required. Works in your terminal with zero setup.</p>
+  <p data-lang="es">Agente aut&oacute;nomo de c&oacute;digo con <strong class="text-primary">4 roles especializados</strong> que trabajan en ciclo. Sin API key. Funciona en tu terminal sin configuraci&oacute;n.</p>
+  <div class="actions">
+    <a href="#install" class="btn btn-primary" data-lang="en">INSTALL</a>
+    <a href="#install" class="btn btn-primary" data-lang="es">INSTALAR</a>
+    <a href="https://github.com/UreckChan/mimir-cli" class="btn btn-outline" data-lang="en">VIEW SOURCE →</a>
+    <a href="https://github.com/UreckChan/mimir-cli" class="btn btn-outline" data-lang="es">VER CÓDIGO →</a>
+  </div>
+  <div>
+    <span class="badge badge-green">PROTOCOL: v1.0.0</span>
+    <span class="badge badge-yellow">STATUS: STABLE</span>
+  </div>
+</div>
+
+<!-- INSTALL -->
+<div class="section" id="install">
+  <h2 class="section-title"><span class="bar"></span> <span data-lang="en">Install</span><span data-lang="es">Instalaci&oacute;n</span></h2>
+  <div class="card">
+    <div class="card-header">
+      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--error);margin-right:4px"></span>
+      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--warning);margin-right:4px"></span>
+      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--primary);margin-right:8px"></span>
+      terminal
     </div>
-    <div id="sidebar-label" class="text-label text-text-muted px-6 py-2">Documentation</div>
-    <nav class="flex-1 p-4 space-y-1" id="sidebar-nav"></nav>
-    <div class="p-4 border-t border-border-color">
-      <a href="https://github.com/UreckChan" class="text-label text-text-muted hover:text-primary">@UreckChan</a>
+    <div class="terminal">
+      <span class="comment"># <span data-lang="en">Install globally via npm</span><span data-lang="es">Instala globalmente via npm</span></span><br>
+      npm install -g mimir-cli<br><br>
+      <span class="comment"># <span data-lang="en">No API key required. No account needed. Uses Freebuff + Ollama by default.</span><span data-lang="es">Sin API key. Sin cuenta. Usa Freebuff + Ollama por defecto.</span></span>
     </div>
-  </aside>
+  </div>
+  <div class="card mt-4">
+    <h3 style="font-size:18px;font-weight:800;text-transform:uppercase;color:var(--primary);margin-bottom:12px" data-lang="en">Direct Downloads</h3>
+    <h3 style="font-size:18px;font-weight:800;text-transform:uppercase;color:var(--primary);margin-bottom:12px" data-lang="es">Descargas Directas</h3>
+    <p class="text-secondary" style="font-size:12px;margin-bottom:16px" data-lang="en">Binaries for each platform. Download and run directly.</p>
+    <p class="text-secondary" style="font-size:12px;margin-bottom:16px" data-lang="es">Binarios para cada plataforma. Descarga y ejecuta directamente.</p>
+    <div class="grid-3">
+      <a href="https://github.com/UreckChan/mimir-cli/releases/download/v1.0.0/mimir-macos-arm64" class="grid-item" style="text-decoration:none">
+        <div class="label">macOS</div>
+        <div style="font-size:12px;color:var(--primary);margin-top:4px">mimir-macos-arm64</div>
+        <div class="text-muted" style="font-size:10px;margin-top:4px">Apple Silicon · 65 MB</div>
+      </a>
+      <a href="https://github.com/UreckChan/mimir-cli/releases/download/v1.0.0/mimir-linux-x64" class="grid-item" style="text-decoration:none">
+        <div class="label">Linux</div>
+        <div style="font-size:12px;color:var(--primary);margin-top:4px">mimir-linux-x64</div>
+        <div class="text-muted" style="font-size:10px;margin-top:4px">x86_64 · 94 MB</div>
+      </a>
+      <a href="https://github.com/UreckChan/mimir-cli/releases/download/v1.0.0/mimir-windows-x64.exe" class="grid-item" style="text-decoration:none">
+        <div class="label">Windows</div>
+        <div style="font-size:12px;color:var(--primary);margin-top:4px">mimir-windows-x64.exe</div>
+        <div class="text-muted" style="font-size:10px;margin-top:4px">x64 · 98 MB</div>
+      </a>
+    </div>
+  </div>
+</div>
 
-  <!-- Overlay for mobile sidebar -->
-  <div id="sidebar-overlay" onclick="toggleMobileMenu()" class="fixed inset-0 bg-black/50 z-30 hidden md:hidden"></div>
+<!-- QUICK START -->
+<div class="section" id="quickstart">
+  <h2 class="section-title"><span class="bar"></span> <span data-lang="en">Quick Start</span><span data-lang="es">Inicio R&aacute;pido</span></h2>
+  <div class="card"><div class="label" data-lang="en">Chat mode</div><div class="label" data-lang="es">Modo chat</div><div class="terminal mt-2">mimir --goal "Hello! What can you do?"</div></div>
+  <div class="card"><div class="label" data-lang="en">Project mode (full 4-role loop)</div><div class="label" data-lang="es">Modo proyecto (ciclo completo)</div><div class="terminal mt-2">mimir --goal "Create a CLI tool" --cwd /my/project</div></div>
+  <div class="card"><div class="label" data-lang="en">Sidecar mode</div><div class="label" data-lang="es">Modo sidecar</div><div class="terminal mt-2">mimir --serve</div></div>
+</div>
 
-  <main class="flex-1 ml-0 md:ml-64 p-4 md:p-10 max-w-5xl" id="content">
-    <!-- Content injected by JS -->
-  </main>
+<!-- ARCHITECTURE -->
+<div class="section" id="architecture">
+  <h2 class="section-title"><span class="bar"></span> Architecture</h2>
+  <div class="card">
+    <p class="text-secondary" style="font-size:13px;line-height:1.6;margin-bottom:20px">Mimir runs on: <strong class="text-primary">PLAN → STEP → VERIFY → LEARN</strong>.</p>
+    <div class="terminal" style="white-space:pre;line-height:1.5">+----------------------+
+|       Mimir          |
++----------+-----------+
+     |
+     +-------+-------+
+     v       v       v
++-------+ +-----+ +-------+
+|Arch   | |Build| |Insp   |
++---+---+ +--+--+ +---+---+
+    |        |        |
+    +--------+--------+
+             v
+      +-----------+
+      |ModelRouter|
+      +-----+-----+
+            |
+     +------+------+
+     v      v      v
+ +------+ +----+ +-----+
+ |Free  | |Oll | |Cloud |
+ +------+ +----+ +-----+</div>
+  </div>
+</div>
+
+<!-- ROLES -->
+<div class="section" id="roles">
+  <h2 class="section-title"><span class="bar"></span> <span data-lang="en">The 4 Roles</span><span data-lang="es">Los 4 Roles</span></h2>
+  <div class="grid-4">
+    <div class="grid-item"><div class="label">ROLE_01</div><h3 style="font-size:18px;font-weight:800;text-transform:uppercase;color:var(--arch);margin-top:8px">Architect</h3><p class="text-secondary" style="font-size:11px;margin-top:8px" data-lang="en">Plans strategy. Breaks down goals into steps.</p><p class="text-secondary" style="font-size:11px;margin-top:8px" data-lang="es">Planea la estrategia. Desglosa objetivos en pasos.</p></div>
+    <div class="grid-item"><div class="label">ROLE_02</div><h3 style="font-size:18px;font-weight:800;text-transform:uppercase;color:var(--arch);margin-top:8px">Builder</h3><p class="text-secondary" style="font-size:11px;margin-top:8px" data-lang="en">Writes code, runs commands, installs deps.</p><p class="text-secondary" style="font-size:11px;margin-top:8px" data-lang="es">Escribe c&oacute;digo, ejecuta comandos.</p></div>
+    <div class="grid-item"><div class="label">ROLE_03</div><h3 style="font-size:18px;font-weight:800;text-transform:uppercase;color:var(--insp);margin-top:8px">Inspector</h3><p class="text-secondary" style="font-size:11px;margin-top:8px" data-lang="en">Verifies quality. Runs tests, checks code.</p><p class="text-secondary" style="font-size:11px;margin-top:8px" data-lang="es">Verifica calidad. Ejecuta tests.</p></div>
+    <div class="grid-item"><div class="label">ROLE_04</div><h3 style="font-size:18px;font-weight:800;text-transform:uppercase;color:var(--text-secondary);margin-top:8px">Chronicler</h3><p class="text-secondary" style="font-size:11px;margin-top:8px" data-lang="en">Documents lessons. Generates playbooks.</p><p class="text-secondary" style="font-size:11px;margin-top:8px" data-lang="es">Documenta lecciones. Genera playbooks.</p></div>
+  </div>
+</div>
+
+<!-- FLAGS -->
+<div class="section" id="flags">
+  <h2 class="section-title"><span class="bar"></span> <span data-lang="en">CLI Flags</span><span data-lang="es">Flags CLI</span></h2>
+  <table>
+    <tr><th>Flag</th><th data-lang="en">Description</th><th data-lang="es">Descripci&oacute;n</th><th>Default</th></tr>
+    <tr><td class="text-primary">--goal</td><td colspan="2" data-lang="en">Your objective</td><td data-lang="es">Tu objetivo</td><td>-</td></tr>
+    <tr><td class="text-primary">--cwd</td><td colspan="2" data-lang="en">Working directory</td><td data-lang="es">Directorio de trabajo</td><td>current dir</td></tr>
+    <tr><td class="text-primary">--budget</td><td colspan="2" data-lang="en">Max budget in USD</td><td data-lang="es">Presupuesto m&aacute;ximo USD</td><td>unlimited</td></tr>
+    <tr><td class="text-primary">--night</td><td colspan="2" data-lang="en">Queue mode for overnight</td><td data-lang="es">Cola de metas nocturna</td><td>false</td></tr>
+    <tr><td class="text-primary">--no-sandbox</td><td colspan="2" data-lang="en">Skip git worktree isolation</td><td data-lang="es">Sin aislamiento git</td><td>false</td></tr>
+    <tr><td class="text-primary">--serve</td><td colspan="2" data-lang="en">WebSocket sidecar mode</td><td data-lang="es">Modo sidecar WebSocket</td><td>false</td></tr>
+    <tr><td class="text-primary">--port</td><td colspan="2" data-lang="en">Sidecar port</td><td data-lang="es">Puerto del sidecar</td><td>4317</td></tr>
+    <tr><td class="text-primary">--setup</td><td colspan="2" data-lang="en">Setup wizard</td><td data-lang="es">Asistente de configuraci&oacute;n</td><td>-</td></tr>
+  </table>
+</div>
+
+<!-- MODES -->
+<div class="section" id="modes">
+  <h2 class="section-title"><span class="bar"></span> Modes</h2>
+  <div class="grid-3">
+    <div class="grid-item"><span class="label">CHAT</span><p class="text-secondary" style="font-size:11px;margin-top:8px" data-lang="en">Direct response. No tools, no loop.</p><p class="text-secondary" style="font-size:11px;margin-top:8px" data-lang="es">Respuesta directa. Sin herramientas.</p></div>
+    <div class="grid-item"><span class="label" style="color:var(--warning)">PLAN</span><p class="text-secondary" style="font-size:11px;margin-top:8px" data-lang="en">Full loop with detailed planning.</p><p class="text-secondary" style="font-size:11px;margin-top:8px" data-lang="es">Ciclo completo con plan detallado.</p></div>
+    <div class="grid-item"><span class="label" style="color:var(--insp)">BUILD</span><p class="text-secondary" style="font-size:11px;margin-top:8px" data-lang="en">Optimized for coding. Fast execution.</p><p class="text-secondary" style="font-size:11px;margin-top:8px" data-lang="es">Optimizado para codificar.</p></div>
+  </div>
+</div>
+
+<!-- PROVIDERS -->
+<div class="section" id="providers">
+  <h2 class="section-title"><span class="bar"></span> <span data-lang="en">Supported Providers</span><span data-lang="es">Proveedores Soportados</span></h2>
+  <div class="grid-4" id="providers-grid"></div>
+</div>
+
+<!-- TERMINAL -->
+<div class="section" id="terminal">
+  <h2 class="section-title"><span class="bar"></span> <span data-lang="en">Terminal Adapters</span><span data-lang="es">Adaptadores de Terminal</span></h2>
+  <table>
+    <tr><th>Terminal</th><th>Install</th><th data-lang="en">Subscription</th><th data-lang="es">Suscripci&oacute;n</th><th>Default</th></tr>
+    <tr><td class="text-primary">Bash</td><td>Built-in</td><td>No</td><td class="text-primary">✓</td></tr>
+    <tr><td class="text-primary">Claude Code</td><td>npm i -g @anthropic-ai/claude-code</td><td data-lang="en">Claude sub</td><td data-lang="es">Suscripci&oacute;n Claude</td><td>-</td></tr>
+    <tr><td class="text-primary">Codex CLI</td><td>npm i -g @openai/codex</td><td>OpenAI</td><td>-</td></tr>
+    <tr><td class="text-primary">OpenCode</td><td>npm i -g opencode</td><td>No</td><td>-</td></tr>
+    <tr><td class="text-primary">Aider</td><td>pip install aider-chat</td><td>No</td><td>-</td></tr>
+  </table>
+</div>
+
+<!-- CONFIG -->
+<div class="section" id="config">
+  <h2 class="section-title"><span class="bar"></span> <span data-lang="en">Configuration</span><span data-lang="es">Configuraci&oacute;n</span></h2>
+  <div class="card">
+    <h3 style="font-size:16px;font-weight:800;text-transform:uppercase;color:var(--primary);margin-bottom:12px">API Keys</h3>
+    <p class="text-secondary" style="font-size:12px;margin-bottom:16px" data-lang="en">Set env vars or use Settings panel. Keys stored in system keychain.</p>
+    <p class="text-secondary" style="font-size:12px;margin-bottom:16px" data-lang="es">Define variables de entorno o usa el panel de Ajustes.</p>
+    <div class="terminal">export ANTHROPIC_API_KEY=sk-...<br>export OPENAI_API_KEY=sk-...<br>export DEEPSEEK_API_KEY=sk-...</div>
+  </div>
+  <div class="card">
+    <h3 style="font-size:16px;font-weight:800;text-transform:uppercase;color:var(--primary);margin-bottom:12px">Priority List</h3>
+    <p class="text-secondary" style="font-size:12px;margin-bottom:16px" data-lang="en">Models tried in order. Falls back automatically on failure.</p>
+    <p class="text-secondary" style="font-size:12px;margin-bottom:16px" data-lang="es">Modelos en orden de prioridad. Fallback autom&aacute;tico.</p>
+    <div class="terminal">1. deepseek/deepseek-v4-flash<br>2. anthropic/claude-sonnet-5<br>3. ollama/llama3.2:3b <span class="comment"># free</span></div>
+  </div>
+</div>
+
+<!-- SECURITY -->
+<div class="section" id="security">
+  <h2 class="section-title"><span class="bar"></span> <span data-lang="en">Security</span><span data-lang="es">Seguridad</span></h2>
+  <div class="card">
+    <p class="text-secondary" style="font-size:12px" data-lang="en">API keys and credentials are automatically censored from logs and tool outputs before reaching the AI model. Three permission levels available.</p>
+    <p class="text-secondary" style="font-size:12px" data-lang="es">Las API keys se censuran autom&aacute;ticamente de los logs antes de llegar al modelo de IA.</p>
+  </div>
+</div>
+
+<!-- VAULT -->
+<div class="section" id="vault">
+  <h2 class="section-title"><span class="bar"></span> Alexandria Vault</h2>
+  <p class="text-secondary" style="font-size:12px;margin-bottom:16px;line-height:1.6" data-lang="en">Every lesson learned is stored in a persistent local vault with FTS5 search. Past solutions are recalled automatically when similar tasks appear.</p>
+  <p class="text-secondary" style="font-size:12px;margin-bottom:16px;line-height:1.6" data-lang="es">Cada lecci&oacute;n se guarda en una b&oacute;veda persistente con b&uacute;squeda FTS5.</p>
+  <div class="grid-3">
+    <div class="grid-item"><div class="label">LESSON</div><div class="text-primary" style="font-size:12px;margin-top:4px">Auth proxies need middleware</div></div>
+    <div class="grid-item"><div class="label">PLAYBOOK</div><div class="text-primary" style="font-size:12px;margin-top:4px">Deploy proxy infrastructure</div></div>
+    <div class="grid-item"><div class="label">SESSION</div><div class="text-primary" style="font-size:12px;margin-top:4px">Fix cold start latency</div></div>
+  </div>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+  <div>
+    <h3 style="font-family:Montserrat,sans-serif;font-size:16px;font-weight:900;text-transform:uppercase;color:var(--primary-dim);margin-bottom:8px">Mimir CLI</h3>
+    <p class="text-muted" style="font-size:11px" data-lang="en">Built by Uriel Gomez Becerril. MIT License.</p>
+    <p class="text-muted" style="font-size:11px" data-lang="es">Creado por Uriel Gomez Becerril. MIT License.</p>
+  </div>
+  <div style="display:flex;gap:48px;flex-wrap:wrap">
+    <div class="col">
+      <h4 data-lang="en">Links</h4><h4 data-lang="es">Enlaces</h4>
+      <a href="https://github.com/UreckChan/mimir-cli">GitHub</a>
+      <a href="https://www.npmjs.com/package/mimir-cli">npm</a>
+      <a href="https://github.com/UreckChan">@UreckChan</a>
+    </div>
+    <div class="col">
+      <h4>Tech</h4>
+      <span style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:4px">Bun · Tauri v2 · React</span>
+    </div>
+  </div>
+</div>
+
 </div>
 
 <script>
-const LANG_KEY = 'mimir-docs-lang';
-let currentLang = localStorage.getItem(LANG_KEY) || 'en';
-
-const EN = {}, ES = {};
-
-// ─── HERO ───
-EN.hero_title = 'Mimir CLI';
-ES.hero_title = 'Mimir CLI';
-EN.hero_desc = 'Autonomous coding agent with <strong class="text-primary">4 specialized roles</strong> that work in a loop. No API key required. Works in your terminal with zero setup.';
-ES.hero_desc = 'Agente aut\u00f3nomo de c\u00f3digo con <strong class="text-primary">4 roles especializados</strong> que trabajan en ciclo. Sin API key. Funciona en tu terminal sin configuraci\u00f3n.';
-EN.hero_install = 'INSTALL';
-ES.hero_install = 'INSTALAR';
-EN.hero_source = 'VIEW SOURCE \u2192';
-ES.hero_source = 'VER C\u00d3DIGO \u2192';
-
-// ─── INSTALL ───
-EN.install_title = 'Install';
-ES.install_title = 'Instalaci\u00f3n';
-EN.install_npm = 'Install globally via npm';
-ES.install_npm = 'Instala globalmente via npm';
-EN.install_note = 'No API key required. No account needed. Uses Freebuff + Ollama by default.';
-ES.install_note = 'Sin API key. Sin cuenta. Usa Freebuff + Ollama por defecto.';
-EN.install_downloads = 'Direct Downloads';
-ES.install_downloads = 'Descargas Directas';
-EN.install_downloads_desc = 'Binaries for each platform. Download and run directly.';
-ES.install_downloads_desc = 'Binarios para cada plataforma. Descarga y ejecuta directamente.';
-
-// ─── QUICKSTART ───
-EN.qs_title = 'Quick Start';
-ES.qs_title = 'Inicio R\u00e1pido';
-EN.qs_chat = 'Chat mode';
-ES.qs_chat = 'Modo chat';
-EN.qs_project = 'Project mode (full 4-role loop)';
-ES.qs_project = 'Modo proyecto (ciclo completo de 4 roles)';
-EN.qs_sidecar = 'Sidecar mode';
-ES.qs_sidecar = 'Modo sidecar';
-
-// ─── ARCHITECTURE ───
-EN.arch_title = 'Architecture';
-ES.arch_title = 'Arquitectura';
-EN.arch_desc = 'Mimir runs on: <strong class="text-primary">PLAN \u2192 STEP \u2192 VERIFY \u2192 LEARN</strong>.';
-ES.arch_desc = 'Mimir ejecuta: <strong class="text-primary">PLAN \u2192 STEP \u2192 VERIFY \u2192 LEARN</strong>.';
-
-// ─── ROLES ───
-EN.roles_title = 'The 4 Roles';
-ES.roles_title = 'Los 4 Roles';
-EN.arch_role = 'Plans strategy. Breaks down goals into steps.';
-ES.arch_role = 'Planea la estrategia. Desglosa objetivos en pasos.';
-EN.build_role = 'Writes code, runs commands, installs deps.';
-ES.build_role = 'Escribe c\u00f3digo, ejecuta comandos, instala dependencias.';
-EN.insp_role = 'Verifies quality. Runs tests, checks code.';
-ES.insp_role = 'Verifica calidad. Ejecuta tests, revisa c\u00f3digo.';
-EN.chr_role = 'Documents lessons. Generates playbooks.';
-ES.chr_role = 'Documenta lecciones. Genera playbooks.';
-
-// ─── FLAGS ───
-EN.flags_title = 'CLI Flags';
-ES.flags_title = 'Flags de CLI';
-EN.flags = [
-  ['--goal', 'Your objective', '-'],
-  ['--cwd', 'Working directory', 'current dir'],
-  ['--budget', 'Max budget in USD', 'unlimited'],
-  ['--night', 'Queue mode for overnight', 'false'],
-  ['--no-sandbox', 'Skip git worktree isolation', 'false'],
-  ['--serve', 'WebSocket sidecar mode', 'false'],
-  ['--port', 'Sidecar port', '4317'],
-  ['--setup', 'Setup wizard', '-'],
+// Providers & Terminals data (injected via JS to avoid repetition)
+const providers = [
+  ["Freebuff", "Cloud", "Free (ads)", "#00FF41"],
+  ["Ollama", "Local", "Free", "#00FF41"],
+  ["Anthropic", "Cloud", "API key", "#38bdf8"],
+  ["OpenAI", "Cloud", "API key", "#38bdf8"],
+  ["Google", "Cloud", "API key", "#38bdf8"],
+  ["DeepSeek", "Cloud", "API key", "#ff7b00"],
+  ["xAI (Grok)", "Cloud", "API key", "#ff7b00"],
+  ["Custom", "Any", "Configurable", "#b9ccb2"],
 ];
-ES.flags = [
-  ['--goal', 'Tu objetivo', '-'],
-  ['--cwd', 'Directorio de trabajo', 'directorio actual'],
-  ['--budget', 'Presupuesto m\u00e1ximo en USD', 'sin l\u00edmite'],
-  ['--night', 'Cola de metas nocturna', 'false'],
-  ['--no-sandbox', 'Sin aislamiento git worktree', 'false'],
-  ['--serve', 'Modo sidecar WebSocket', 'false'],
-  ['--port', 'Puerto del sidecar', '4317'],
-  ['--setup', 'Asistente de configuraci\u00f3n', '-'],
-];
+document.getElementById('providers-grid').innerHTML = providers.map(p =>
+  '<div class="grid-item"><div class="text-primary" style="color:' + p[3] + ';font-weight:700;font-size:12px">' + p[0] + '</div><div class="label mt-2">' + p[1] + '</div><div class="text-secondary" style="font-size:10px;margin-top:4px">' + p[2] + '</div></div>'
+).join('');
 
-// ─── MODES ───
-EN.modes_title = 'Modes';
-ES.modes_title = 'Modos';
-EN.mode_chat = 'Direct response. No tools, no loop. Best for casual chat.';
-ES.mode_chat = 'Respuesta directa. Sin herramientas, sin ciclo. Ideal para charla casual.';
-EN.mode_plan = 'Full loop with detailed planning. Step-by-step execution.';
-ES.mode_plan = 'Ciclo completo con plan detallado. Ejecuci\u00f3n paso a paso.';
-EN.mode_build = 'Optimized for coding. Fast execution, shorter planning.';
-ES.mode_build = 'Optimizado para codificar. Ejecuci\u00f3n r\u00e1pida, plan corto.';
-
-// ─── PROVIDERS ───
-EN.providers_title = 'Supported Providers';
-ES.providers_title = 'Proveedores Soportados';
-
-// ─── TERMINAL ───
-EN.term_title = 'Terminal Adapters';
-ES.term_title = 'Adaptadores de Terminal';
-
-// ─── CONFIG ───
-EN.config_title = 'Configuration';
-ES.config_title = 'Configuraci\u00f3n';
-EN.config_keys = 'Set env vars or use Settings panel. Keys stored in system keychain.';
-ES.config_keys = 'Define variables de entorno o usa el panel de Ajustes. Las keys se guardan en el keychain del sistema.';
-EN.config_failover = 'Models tried in order. Falls back automatically on failure.';
-ES.config_failover = 'Modelos en orden de prioridad. Fallback autom\u00e1tico ante fallo.';
-
-// ─── SECURITY ───
-EN.security_title = 'Security';
-ES.security_title = 'Seguridad';
-EN.security_desc = 'API keys and credentials are automatically censored from logs and tool outputs before reaching the AI model.';
-ES.security_desc = 'Las API keys y credenciales se censuran autom\u00e1ticamente de los logs antes de llegar al modelo de IA.';
-
-// ─── VAULT ───
-EN.vault_title = 'Alexandria Vault';
-ES.vault_title = 'B\u00f3veda de Alexandria';
-EN.vault_desc = 'Every lesson learned is stored in a persistent local vault with FTS5 search. Past solutions are recalled automatically when similar tasks appear.';
-ES.vault_desc = 'Cada lecci\u00f3n aprendida se guarda en una b\u00f3veda persistente con b\u00fasqueda FTS5. Las soluciones previas se recuerdan autom\u00e1ticamente cuando aparecen tareas similares.';
-
-// ─── SIDEBAR ───
-EN.sidebar = ['Install', 'Quick Start', 'Architecture', '4 Roles', 'CLI Flags', 'Modes', 'Providers', 'Terminal Adapters', 'Configuration', 'Security', 'Vault'];
-ES.sidebar = ['Instalar', 'Inicio R\u00e1pido', 'Arquitectura', '4 Roles', 'Flags CLI', 'Modos', 'Proveedores', 'Adaptadores Terminal', 'Configuraci\u00f3n', 'Seguridad', 'Vault'];
-
-const sidebarLinks = ['install','quickstart','architecture','roles','flags','modes','providers','terminal','config','security','vault'];
-
-function renderContent(lang) {
-  const t = lang === 'en' ? EN : ES;
-  const sb = lang === 'en' ? EN.sidebar : ES.sidebar;
-  const nav = document.getElementById('sidebar-nav');
-  if (nav) nav.innerHTML = sb.map((label, i) =>
-    `<a href="#${sidebarLinks[i]}" class="block px-3 py-2 text-code text-text-secondary hover:bg-surface-high hover:text-primary">${label}</a>`
-  ).join('');
-  const slab = document.getElementById('sidebar-label');
-  if (slab) slab.textContent = lang === 'en' ? 'Documentation' : 'Documentaci\u00f3n';
-
-  document.getElementById('content').innerHTML = `
-    <section class="mb-12 border border-border-color p-8 md:p-12 relative overflow-hidden">
-      <div class="absolute top-0 right-0 text-8xl text-surface-high font-headline font-black opacity-20 select-none">01</div>
-      <div class="relative z-10">
-        <h1 class="font-headline text-headline-xl text-primary-dim font-black uppercase tracking-tight glow">${t.hero_title}</h1>
-        <p class="text-body text-text-secondary max-w-2xl mt-4 leading-relaxed">${t.hero_desc}</p>
-        <div class="flex gap-4 mt-8 flex-wrap">
-          <a href="#install" class="px-6 py-3 border border-primary text-primary font-headline font-bold text-sm hover:bg-primary hover:text-black transition-all">${t.hero_install}</a>
-          <a href="https://github.com/UreckChan/mimir-cli" class="px-6 py-3 border border-border-color text-text-secondary text-code hover:border-primary hover:text-primary transition-all">${t.hero_source}</a>
-        </div>
-        <div class="flex gap-4 mt-6">
-          <span class="px-3 py-1 border border-primary-dim text-primary-dim text-label bg-primary-dim/5">PROTOCOL: v1.0.0</span>
-          <span class="px-3 py-1 border border-warning text-warning text-label bg-warning/5">STATUS: STABLE</span>
-        </div>
-      </div>
-    </section>
-
-    <section id="install" class="mb-16 scroll-mt-24">
-      <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4"><span class="w-1 h-6 bg-primary"></span> ${t.install_title}</h2>
-      <div class="border border-border-color bg-surface overflow-hidden">
-        <div class="bg-surface-high px-4 py-2 border-b border-border-color flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-error"></span><span class="w-2 h-2 rounded-full bg-warning"></span><span class="w-2 h-2 rounded-full bg-primary"></span>
-          <span class="ml-4 text-label text-text-muted">terminal</span>
-        </div>
-        <div class="p-6 text-code text-primary">
-          <span class="text-text-muted"># ${t.install_npm}</span><br/>
-          npm install -g mimir-cli<br/><br/>
-          <span class="text-text-muted"># ${t.install_note}</span>
-        </div>
-      </div>
-      <div class="mt-6 border border-border-color p-6 bg-surface-low">
-        <h3 class="font-headline text-lg text-primary uppercase mb-4">${t.install_downloads}</h3>
-        <p class="text-code text-text-secondary mb-4">${t.install_downloads_desc}</p>
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <a href="https://github.com/UreckChan/mimir-cli/releases/download/v1.0.0/mimir-macos-arm64" class="block border border-border-color p-4 bg-background hover:border-primary hover:bg-surface-container transition-all group">
-            <div class="text-label text-text-muted uppercase">macOS</div>
-            <div class="text-code text-primary mt-1 group-hover:underline">mimir-macos-arm64</div>
-            <div class="text-code text-[10px] text-text-muted mt-1">Apple Silicon · 65 MB</div>
-          </a>
-          <a href="https://github.com/UreckChan/mimir-cli/releases/download/v1.0.0/mimir-linux-x64" class="block border border-border-color p-4 bg-background hover:border-primary hover:bg-surface-container transition-all group">
-            <div class="text-label text-text-muted uppercase">Linux</div>
-            <div class="text-code text-primary mt-1 group-hover:underline">mimir-linux-x64</div>
-            <div class="text-code text-[10px] text-text-muted mt-1">x86_64 · 94 MB</div>
-          </a>
-          <a href="https://github.com/UreckChan/mimir-cli/releases/download/v1.0.0/mimir-windows-x64.exe" class="block border border-border-color p-4 bg-background hover:border-primary hover:bg-surface-container transition-all group">
-            <div class="text-label text-text-muted uppercase">Windows</div>
-            <div class="text-code text-primary mt-1 group-hover:underline">mimir-windows-x64.exe</div>
-            <div class="text-code text-[10px] text-text-muted mt-1">x64 · 98 MB</div>
-          </a>
-        </div>
-      </div>
-    </section>
-
-    <section id="quickstart" class="mb-16 scroll-mt-24">
-      <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4"><span class="w-1 h-6 bg-primary"></span> ${t.qs_title}</h2>
-      <div class="space-y-4">
-        <div class="border border-border-color p-5 bg-surface-low"><div class="text-label text-text-muted uppercase mb-2">${t.qs_chat}</div><code class="text-code text-primary">mimir --goal "Hello! What can you do?"</code></div>
-        <div class="border border-border-color p-5 bg-surface-low"><div class="text-label text-text-muted uppercase mb-2">${t.qs_project}</div><code class="text-code text-primary">mimir --goal "Create a CLI tool" --cwd /my/project</code></div>
-        <div class="border border-border-color p-5 bg-surface-low"><div class="text-label text-text-muted uppercase mb-2">${t.qs_sidecar}</div><code class="text-code text-primary">mimir --serve</code></div>
-      </div>
-    </section>
-
-    <section id="architecture" class="mb-16 scroll-mt-24">
-      <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4"><span class="w-1 h-6 bg-primary"></span> ${t.arch_title}</h2>
-      <div class="border border-border-color bg-surface p-6">
-        <p class="text-body text-text-secondary mb-6">${t.arch_desc}</p>
-        <div class="text-code bg-background p-4 border border-border-color overflow-x-auto whitespace-pre text-primary">
-+----------------------+\n|       Mimir          |\n+----------+-----------+\n           |\n+----------+-----------+\nv          v           v\n+---------+ +---------+ +-----------+\n|Architect| | Builder | | Inspector |\n+----+----+ +----+----+ +-----+-----+\n     |           |             |\n     +-----------+-------------+\n                 v\n          +--------------+\n          | ModelRouter  |\n          +------+-------+\n                 |\n       +---------+---------+\n       v         v         v\n   +--------+ +-------+ +-------+\n   |Freebuff| |Ollama | | Cloud |\n   +--------+ +-------+ +-------+</div>
-      </div>
-    </section>
-
-    <section id="roles" class="mb-16 scroll-mt-24">
-      <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4"><span class="w-1 h-6 bg-primary"></span> ${t.roles_title}</h2>
-      <div class="grid grid-cols-1 md:grid-cols-4 gap-0 border border-border-color">
-        <div class="p-6 border-r border-b md:border-b-0 border-border-color bg-surface hover:bg-surface-container"><span class="text-label text-primary-dim">ROLE_01</span><h3 class="font-headline text-xl text-[#38bdf8] font-black uppercase mt-2">Architect</h3><p class="text-code text-text-secondary mt-2">${t.arch_role}</p></div>
-        <div class="p-6 border-r border-border-color bg-surface hover:bg-surface-container"><span class="text-label text-primary-dim">ROLE_02</span><h3 class="font-headline text-xl text-[#38bdf8] font-black uppercase mt-2">Builder</h3><p class="text-code text-text-secondary mt-2">${t.build_role}</p></div>
-        <div class="p-6 border-r border-border-color bg-surface hover:bg-surface-container"><span class="text-label text-primary-dim">ROLE_03</span><h3 class="font-headline text-xl text-[#ff7b00] font-black uppercase mt-2">Inspector</h3><p class="text-code text-text-secondary mt-2">${t.insp_role}</p></div>
-        <div class="p-6 bg-surface hover:bg-surface-container"><span class="text-label text-primary-dim">ROLE_04</span><h3 class="font-headline text-xl text-[#b9ccb2] font-black uppercase mt-2">Chronicler</h3><p class="text-code text-text-secondary mt-2">${t.chr_role}</p></div>
-      </div>
-    </section>
-
-    <section id="flags" class="mb-16 scroll-mt-24">
-      <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4"><span class="w-1 h-6 bg-primary"></span> ${t.flags_title}</h2>
-      <div class="border border-border-color">
-        <div class="grid grid-cols-3 bg-surface-high text-label text-text-muted uppercase p-3 border-b border-border-color"><div>Flag</div><div>Description</div><div>Default</div></div>
-        <div class="divide-y divide-border-color text-code">
-          ${t.flags.map(f => `<div class="grid grid-cols-3 p-3 hover:bg-surface-container"><span class="text-primary">${f[0]}</span><span class="text-text-secondary">${f[1]}</span><span class="text-text-muted">${f[2]}</span></div>`).join('')}
-        </div>
-      </div>
-    </section>
-
-    <section id="modes" class="mb-16 scroll-mt-24">
-      <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4"><span class="w-1 h-6 bg-primary"></span> ${t.modes_title}</h2>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-0 border border-border-color">
-        <div class="p-6 border-r border-border-color bg-surface"><span class="text-label text-primary-dim">CHAT</span><p class="text-code text-text-secondary mt-2">${t.mode_chat}</p></div>
-        <div class="p-6 border-r border-border-color bg-surface"><span class="text-label text-warning">PLAN</span><p class="text-code text-text-secondary mt-2">${t.mode_plan}</p></div>
-        <div class="p-6 bg-surface"><span class="text-label text-accent-orange">BUILD</span><p class="text-code text-text-secondary mt-2">${t.mode_build}</p></div>
-      </div>
-    </section>
-
-    <section id="providers" class="mb-16 scroll-mt-24">
-      <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4"><span class="w-1 h-6 bg-primary"></span> ${t.providers_title}</h2>
-      <div class="grid grid-cols-2 md:grid-cols-4 gap-0 border border-border-color" id="providers-grid"></div>
-    </section>
-
-    <section id="terminal" class="mb-16 scroll-mt-24">
-      <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4"><span class="w-1 h-6 bg-primary"></span> ${t.term_title}</h2>
-      <div class="border border-border-color">
-        <div class="grid grid-cols-4 bg-surface-high text-label text-text-muted uppercase p-3 border-b border-border-color"><div>Terminal</div><div>Install</div><div>Subscription</div><div>Default</div></div>
-        <div class="divide-y divide-border-color text-code" id="terminal-grid"></div>
-      </div>
-    </section>
-
-    <section id="config" class="mb-16 scroll-mt-24">
-      <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4"><span class="w-1 h-6 bg-primary"></span> ${t.config_title}</h2>
-      <div class="space-y-6">
-        <div class="border border-border-color p-6 bg-surface">
-          <h3 class="font-headline text-lg text-primary uppercase mb-3">API Keys</h3>
-          <p class="text-body text-text-secondary mb-4">${t.config_keys}</p>
-          <div class="bg-background p-4 border border-border-color text-code text-primary">export ANTHROPIC_API_KEY=sk-...<br/>export OPENAI_API_KEY=sk-...<br/>export DEEPSEEK_API_KEY=sk-...</div>
-        </div>
-        <div class="border border-border-color p-6 bg-surface">
-          <h3 class="font-headline text-lg text-primary uppercase mb-3">Priority List</h3>
-          <p class="text-body text-text-secondary mb-4">${t.config_failover}</p>
-          <div class="bg-background p-4 border border-border-color text-code">1. deepseek/deepseek-v4-flash<br/>2. anthropic/claude-sonnet-5<br/>3. ollama/llama3.2:3b <span class="text-text-muted"># free</span></div>
-        </div>
-      </div>
-    </section>
-
-    <section id="security" class="mb-16 scroll-mt-24">
-      <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4"><span class="w-1 h-6 bg-primary"></span> ${t.security_title}</h2>
-      <div class="border border-border-color p-4 bg-surface"><p class="text-code text-text-secondary">${t.security_desc}</p></div>
-    </section>
-
-    <section id="vault" class="mb-16 scroll-mt-24">
-      <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4"><span class="w-1 h-6 bg-primary"></span> ${t.vault_title}</h2>
-      <p class="text-body text-text-secondary mb-6">${t.vault_desc}</p>
-      <div class="border border-border-color p-6 bg-surface">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div class="border border-border-color p-4 bg-surface-low hover:border-primary cursor-pointer"><div class="text-label text-text-muted">LESSON</div><div class="text-code text-primary mt-1">Auth proxies need middleware</div></div>
-          <div class="border border-border-color p-4 bg-surface-low hover:border-primary cursor-pointer"><div class="text-label text-text-muted">PLAYBOOK</div><div class="text-code text-primary mt-1">Deploy proxy infrastructure</div></div>
-          <div class="border border-border-color p-4 bg-surface-low hover:border-primary cursor-pointer"><div class="text-label text-text-muted">SESSION</div><div class="text-code text-primary mt-1">Fix cold start latency</div></div>
-        </div>
-      </div>
-    </section>
-  `;
+function toggleSidebar() {
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('sidebar-overlay').classList.toggle('open');
 }
-  { id: 'install', title: 'Install', icon: '', html: `
-    <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4">
-      <span class="w-1 h-6 bg-primary"></span> Install
-    </h2>
-    <div class="border border-border-color bg-surface overflow-hidden">
-      <div class="bg-surface-high px-4 py-2 border-b border-border-color flex items-center gap-2">
-        <span class="w-2 h-2 rounded-full bg-error"></span>
-        <span class="w-2 h-2 rounded-full bg-warning"></span>
-        <span class="w-2 h-2 rounded-full bg-primary"></span>
-        <span class="ml-4 text-label text-text-muted">terminal</span>
-      </div>
-      <div class="p-6 text-code text-primary">
-        <span class="text-text-muted"># Install globally via npm</span><br/>
-        npm install -g mimir-cli<br/><br/>
-        <span class="text-text-muted"># No API key required. No account needed.</span><br/>
-        <span class="text-text-muted"># Uses Freebuff + Ollama by default.</span>
-      </div>
-    </div>
-    <div class="mt-6 border border-border-color p-6 bg-surface-low">
-      <h3 class="font-headline text-lg text-primary uppercase mb-4">Direct Downloads</h3>
-      <p class="text-code text-text-secondary mb-4">Binaries for each platform. Download and run directly.</p>
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <a href="https://github.com/UreckChan/mimir-cli/releases/download/v1.0.0/mimir-macos-arm64" class="block border border-border-color p-4 bg-background hover:border-primary hover:bg-surface-container transition-all group">
-          <div class="text-label text-text-muted uppercase">macOS</div>
-          <div class="text-code text-primary mt-1 group-hover:underline">mimir-macos-arm64</div>
-          <div class="text-code text-[10px] text-text-muted mt-1">Apple Silicon · 65 MB</div>
-        </a>
-        <a href="https://github.com/UreckChan/mimir-cli/releases/download/v1.0.0/mimir-linux-x64" class="block border border-border-color p-4 bg-background hover:border-primary hover:bg-surface-container transition-all group">
-          <div class="text-label text-text-muted uppercase">Linux</div>
-          <div class="text-code text-primary mt-1 group-hover:underline">mimir-linux-x64</div>
-          <div class="text-code text-[10px] text-text-muted mt-1">x86_64 · 94 MB</div>
-        </a>
-        <a href="https://github.com/UreckChan/mimir-cli/releases/download/v1.0.0/mimir-windows-x64.exe" class="block border border-border-color p-4 bg-background hover:border-primary hover:bg-surface-container transition-all group">
-          <div class="text-label text-text-muted uppercase">Windows</div>
-          <div class="text-code text-primary mt-1 group-hover:underline">mimir-windows-x64.exe</div>
-          <div class="text-code text-[10px] text-text-muted mt-1">x64 · 98 MB</div>
-        </a>
-      </div>
-    </div>` },
-  { id: 'quickstart', title: 'Quick Start', icon: '', html: `
-    <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4">
-      <span class="w-1 h-6 bg-primary"></span> Quick Start
-    </h2>
-    <div class="space-y-4">
-      <div class="border border-border-color p-5 bg-surface-low">
-        <div class="text-label text-text-muted uppercase mb-2">Chat mode</div>
-        <code class="text-code text-primary">mimir --goal "Hello! What can you do?"</code>
-      </div>
-      <div class="border border-border-color p-5 bg-surface-low">
-        <div class="text-label text-text-muted uppercase mb-2">Project mode (full 4-role loop)</div>
-        <code class="text-code text-primary">mimir --goal "Create a CLI tool with tests" --cwd /my/project</code>
-      </div>
-      <div class="border border-border-color p-5 bg-surface-low">
-        <div class="text-label text-text-muted uppercase mb-2">Sidecar mode</div>
-        <code class="text-code text-primary">mimir --serve</code>
-      </div>
-    </div>` },
-  { id: 'architecture', title: 'Architecture', icon: '', html: `
-    <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4">
-      <span class="w-1 h-6 bg-primary"></span> Architecture
-    </h2>
-    <div class="border border-border-color bg-surface p-6">
-      <p class="text-body text-text-secondary mb-6">
-        Mimir runs on: <strong class="text-primary">PLAN → STEP → VERIFY → LEARN</strong>.
-      </p>
-      <div class="text-code bg-background p-4 border border-border-color overflow-x-auto whitespace-pre text-primary">
-        +----------------------+
-        |       Mimir          |
-        +----------+-----------+
-                   |
-        +----------+-----------+
-        v          v           v
-    +---------+ +---------+ +-----------+
-    |Architect| | Builder | | Inspector |
-    +----+----+ +----+----+ +-----+-----+
-         |           |             |
-         +-----------+-------------+
-                     v
-              +--------------+
-              | ModelRouter  |
-              +------+-------+
-                     |
-           +---------+---------+
-           v         v         v
-       +--------+ +-------+ +-------+
-       |Freebuff| |Ollama | | Cloud |
-       +--------+ +-------+ +-------+
-      </div>
-    </div>` },
-  { id: 'roles', title: 'The 4 Roles', icon: '', html: `
-    <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4">
-      <span class="w-1 h-6 bg-primary"></span> The 4 Roles
-    </h2>
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-0 border border-border-color">
-      <div class="p-6 border-r border-b md:border-b-0 border-border-color bg-surface hover:bg-surface-container">
-        <span class="text-label text-primary-dim">ROLE_01</span>
-        <h3 class="font-headline text-xl text-[#38bdf8] font-black uppercase mt-2">Architect</h3>
-        <p class="text-code text-text-secondary mt-2">Plans strategy. Breaks down goals into steps. Refuses to start without a clear path.</p>
-      </div>
-      <div class="p-6 border-r border-border-color bg-surface hover:bg-surface-container">
-        <span class="text-label text-primary-dim">ROLE_02</span>
-        <h3 class="font-headline text-xl text-[#38bdf8] font-black uppercase mt-2">Builder</h3>
-        <p class="text-code text-text-secondary mt-2">Writes code, runs commands, installs deps. The heavy lifter.</p>
-      </div>
-      <div class="p-6 border-r border-border-color bg-surface hover:bg-surface-container">
-        <span class="text-label text-primary-dim">ROLE_03</span>
-        <h3 class="font-headline text-xl text-[#ff7b00] font-black uppercase mt-2">Inspector</h3>
-        <p class="text-code text-text-secondary mt-2">Verifies quality. Runs tests, checks code, rejects bad work.</p>
-      </div>
-      <div class="p-6 bg-surface hover:bg-surface-container">
-        <span class="text-label text-primary-dim">ROLE_04</span>
-        <h3 class="font-headline text-xl text-[#b9ccb2] font-black uppercase mt-2">Chronicler</h3>
-        <p class="text-code text-text-secondary mt-2">Documents lessons. Generates playbooks. Saves to vault.</p>
-      </div>
-    </div>` },
-  { id: 'flags', title: 'CLI Flags', icon: '', html: `
-    <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4">
-      <span class="w-1 h-6 bg-primary"></span> CLI Flags
-    </h2>
-    <div class="border border-border-color">
-      <div class="grid grid-cols-3 bg-surface-high text-label text-text-muted uppercase p-3 border-b border-border-color">
-        <div>Flag</div><div>Description</div><div>Default</div>
-      </div>
-      <div class="divide-y divide-border-color text-code">
-        <div class="grid grid-cols-3 p-3 hover:bg-surface-container"><span class="text-primary">--goal</span><span class="text-text-secondary">Your objective</span><span class="text-text-muted">-</span></div>
-        <div class="grid grid-cols-3 p-3 hover:bg-surface-container"><span class="text-primary">--cwd</span><span class="text-text-secondary">Working directory</span><span class="text-text-muted">current dir</span></div>
-        <div class="grid grid-cols-3 p-3 hover:bg-surface-container"><span class="text-primary">--budget</span><span class="text-text-secondary">Max budget in USD</span><span class="text-text-muted">unlimited</span></div>
-        <div class="grid grid-cols-3 p-3 hover:bg-surface-container"><span class="text-primary">--night</span><span class="text-text-secondary">Queue mode for overnight</span><span class="text-text-muted">false</span></div>
-        <div class="grid grid-cols-3 p-3 hover:bg-surface-container"><span class="text-primary">--no-sandbox</span><span class="text-text-secondary">Skip git worktree isolation</span><span class="text-text-muted">false</span></div>
-        <div class="grid grid-cols-3 p-3 hover:bg-surface-container"><span class="text-primary">--serve</span><span class="text-text-secondary">WebSocket sidecar mode</span><span class="text-text-muted">false</span></div>
-        <div class="grid grid-cols-3 p-3 hover:bg-surface-container"><span class="text-primary">--port</span><span class="text-text-secondary">Sidecar port</span><span class="text-text-muted">4317</span></div>
-        <div class="grid grid-cols-3 p-3 hover:bg-surface-container"><span class="text-primary">--setup</span><span class="text-text-secondary">Setup wizard</span><span class="text-text-muted">-</span></div>
-      </div>
-    </div>` },
-  { id: 'modes', title: 'Modes', icon: '', html: `
-    <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4">
-      <span class="w-1 h-6 bg-primary"></span> Modes
-    </h2>
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-0 border border-border-color">
-      <div class="p-6 border-r border-border-color bg-surface"><span class="text-label text-primary-dim">CHAT</span><p class="text-code text-text-secondary mt-2">Direct response. No tools, no loop. Best for casual chat.</p></div>
-      <div class="p-6 border-r border-border-color bg-surface"><span class="text-label text-warning">PLAN</span><p class="text-code text-text-secondary mt-2">Full loop with detailed planning. Step-by-step execution.</p></div>
-      <div class="p-6 bg-surface"><span class="text-label text-accent-orange">BUILD</span><p class="text-code text-text-secondary mt-2">Optimized for coding. Fast execution, shorter planning.</p></div>
-    </div>` },
-  { id: 'providers', title: 'Providers', icon: '', html: `
-    <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4">
-      <span class="w-1 h-6 bg-primary"></span> Supported Providers
-    </h2>
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-0 border border-border-color" id="providers-grid"></div>` },
-  { id: 'terminal', title: 'Terminal Adapters', icon: '', html: `
-    <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4">
-      <span class="w-1 h-6 bg-primary"></span> Terminal Adapters
-    </h2>
-    <div class="border border-border-color">
-      <div class="grid grid-cols-4 bg-surface-high text-label text-text-muted uppercase p-3 border-b border-border-color">
-        <div>Terminal</div><div>Install</div><div>Subscription</div><div>Default</div>
-      </div>
-      <div class="divide-y divide-border-color text-code" id="terminal-grid"></div>
-    </div>` },
-  { id: 'config', title: 'Configuration', icon: '', html: `
-    <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4">
-      <span class="w-1 h-6 bg-primary"></span> Configuration
-    </h2>
-    <div class="space-y-6">
-      <div class="border border-border-color p-6 bg-surface">
-        <h3 class="font-headline text-lg text-primary uppercase mb-3">API Keys</h3>
-        <p class="text-body text-text-secondary mb-4">Set env vars or use Settings panel. Keys stored in system keychain.</p>
-        <div class="bg-background p-4 border border-border-color text-code text-primary">
-          export ANTHROPIC_API_KEY=sk-...<br/>
-          export OPENAI_API_KEY=sk-...<br/>
-          export DEEPSEEK_API_KEY=sk-...
-        </div>
-      </div>
-      <div class="border border-border-color p-6 bg-surface">
-        <h3 class="font-headline text-lg text-primary uppercase mb-3">Priority List (Failover)</h3>
-        <p class="text-body text-text-secondary mb-4">Models tried in order. Falls back automatically on failure.</p>
-        <div class="bg-background p-4 border border-border-color text-code">
-          1. deepseek/deepseek-v4-flash<br/>
-          2. anthropic/claude-sonnet-5<br/>
-          3. ollama/llama3.2:3b <span class="text-text-muted"># free local</span>
-        </div>
-      </div>
-    </div>` },
-  { id: 'security', title: 'Security', icon: '', html: `
-    <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4">
-      <span class="w-1 h-6 bg-primary"></span> Security
-    </h2>
-    <div class="border border-border-color p-4 bg-surface">
-      <p class="text-code text-text-secondary">API keys and credentials are automatically censored from logs and tool outputs before reaching the AI model. Three permission levels available.</p>
-    </div>` },
-  { id: 'vault', title: 'Alexandria Vault', icon: '', html: `
-    <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4">
-      <span class="w-1 h-6 bg-primary"></span> Alexandria Vault
-    </h2>
-    <p class="text-body text-text-secondary mb-6">Every lesson learned is stored in a persistent local vault with FTS5 search. Past solutions are recalled automatically when similar tasks appear.</p>
-    <div class="border border-border-color p-6 bg-surface">
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div class="border border-border-color p-4 bg-surface-low hover:border-primary cursor-pointer">
-          <div class="text-label text-text-muted">LESSON</div>
-          <div class="text-code text-primary mt-1">Auth proxies need middleware</div>
-        </div>
-        <div class="border border-border-color p-4 bg-surface-low hover:border-primary cursor-pointer">
-          <div class="text-label text-text-muted">PLAYBOOK</div>
-          <div class="text-code text-primary mt-1">Deploy proxy infrastructure</div>
-        </div>
-        <div class="border border-border-color p-4 bg-surface-low hover:border-primary cursor-pointer">
-          <div class="text-label text-text-muted">SESSION</div>
-          <div class="text-code text-primary mt-1">Fix cold start latency</div>
-        </div>
-      </div>
-    </div>` },
-];
-
-const providers = [
-  ["Freebuff", "Cloud", "Free (ads)", "#00FF41"],
-  ["Ollama", "Local", "Free", "#00FF41"],
-  ["Anthropic", "Cloud", "API key", "#38bdf8"],
-  ["OpenAI", "Cloud", "API key", "#38bdf8"],
-  ["Google", "Cloud", "API key", "#38bdf8"],
-  ["DeepSeek", "Cloud", "API key", "#ff7b00"],
-  ["xAI (Grok)", "Cloud", "API key", "#ff7b00"],
-  ["Custom", "Any", "Configurable", "#b9ccb2"],
-];
-
-const terminals = [
-  ["Bash", "Built-in", "No", "✓"],
-  ["Claude Code", "npm i -g @anthropic-ai/claude-code", "Claude sub", "-"],
-  ["Codex CLI", "npm i -g @openai/codex", "OpenAI", "-"],
-  ["OpenCode", "npm i -g opencode", "No", "-"],
-  ["Aider", "pip install aider-chat", "No", "-"],
-];
-
-const providers = [
-  ["Freebuff", "Cloud", "Free (ads)", "#00FF41"],
-  ["Ollama", "Local", "Free", "#00FF41"],
-  ["Anthropic", "Cloud", "API key", "#38bdf8"],
-  ["OpenAI", "Cloud", "API key", "#38bdf8"],
-  ["Google", "Cloud", "API key", "#38bdf8"],
-  ["DeepSeek", "Cloud", "API key", "#ff7b00"],
-  ["xAI (Grok)", "Cloud", "API key", "#ff7b00"],
-  ["Custom", "Any", "Configurable", "#b9ccb2"],
-];
-const terminals = [
-  ["Bash", "Built-in", "No", "\u2713"],
-  ["Claude Code", "npm i -g @anthropic-ai/claude-code", "Claude sub", "-"],
-  ["Codex CLI", "npm i -g @openai/codex", "OpenAI", "-"],
-  ["OpenCode", "npm i -g opencode", "No", "-"],
-  ["Aider", "pip install aider-chat", "No", "-"],
-];
 
 function setLang(lang) {
-  currentLang = lang;
-  try { localStorage.setItem(LANG_KEY, lang); } catch {}
-  document.getElementById('lang-en').style.background = lang === 'en' ? 'rgba(0,230,57,0.1)' : 'transparent';
-  document.getElementById('lang-en').style.color = lang === 'en' ? '#00e639' : '#6b6b80';
-  document.getElementById('lang-es').style.background = lang === 'es' ? 'rgba(0,230,57,0.1)' : 'transparent';
-  document.getElementById('lang-es').style.color = lang === 'es' ? '#00e639' : '#6b6b80';
-  renderContent(lang);
-  // Re-render provider and terminal grids after content update
-  const pg = document.getElementById('providers-grid');
-  if (pg) pg.innerHTML = providers.map(p => `<div class="p-4 border-r border-b border-border-color bg-surface hover:bg-surface-container"><div class="text-code font-bold" style="color:${p[3]}">${p[0]}</div><div class="text-label text-text-muted uppercase mt-1">${p[1]}</div><div class="text-code text-text-secondary text-[10px]">${p[2]}</div></div>`).join('');
-  const tg = document.getElementById('terminal-grid');
-  if (tg) tg.innerHTML = terminals.map(t => `<div class="grid grid-cols-4 p-3 hover:bg-surface-container"><span class="text-primary">${t[0]}</span><span class="text-text-secondary text-[11px]">${t[1]}</span><span class="text-text-muted text-[11px]">${t[2]}</span><span class="${t[3] === '\u2713' ? 'text-primary' : 'text-text-muted'}">${t[3]}</span></div>`).join('');
+  document.documentElement.lang = lang;
+  document.getElementById('lben').style.background = lang === 'en' ? 'rgba(0,230,57,0.1)' : 'transparent';
+  document.getElementById('lben').style.color = lang === 'en' ? '#00e639' : '#6b6b80';
+  document.getElementById('lbes').style.background = lang === 'es' ? 'rgba(0,230,57,0.1)' : 'transparent';
+  document.getElementById('lbes').style.color = lang === 'es' ? '#00e639' : '#6b6b80';
+  try { localStorage.setItem('mimir-docs-lang', lang); } catch {}
 }
 
-function toggleMobileMenu() {
-  const sidebar = document.getElementById('sidebar');
-  const overlay = document.getElementById('sidebar-overlay');
-  const isOpen = sidebar.classList.contains('translate-x-0');
-  if (isOpen) {
-    sidebar.classList.remove('translate-x-0');
-    sidebar.classList.add('-translate-x-full');
-    overlay.classList.add('hidden');
-  } else {
-    sidebar.classList.remove('-translate-x-full');
-    sidebar.classList.add('translate-x-0');
-    overlay.classList.remove('hidden');
-  }
-}
-
-setLang(currentLang);
+// Restore saved language
+try {
+  const saved = localStorage.getItem('mimir-docs-lang');
+  if (saved === 'en' || saved === 'es') setLang(saved);
+  else setLang('en');
+} catch { setLang('en'); }
 </script>
 </body>
 </html>
