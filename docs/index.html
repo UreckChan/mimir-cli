@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Mímir CLI — Autonomous Coding Agent</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet"/>
+<script>
+tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        primary: "#00FF41", "primary-dim": "#00e639", "primary-container": "#00ff41",
+        background: "#0a0a0a", surface: "#131313", "surface-low": "#1c1b1b",
+        "surface-container": "#201f1f", "surface-high": "#2a2a2a", "surface-highest": "#353534",
+        "border-color": "#3b4b37", "text-primary": "#e5e2e1", "text-secondary": "#b9ccb2",
+        "text-muted": "#6b6b80", "accent-orange": "#ff7b00", warning: "#ffcc00", error: "#ef4444",
+      },
+      fontFamily: { headline: ["Montserrat", "sans-serif"], mono: ["JetBrains Mono", "monospace"] },
+      fontSize: {
+        "headline-xl": ["48px", { lineHeight: "1.1", fontWeight: "900" }],
+        "headline-lg": ["28px", { lineHeight: "1.2", fontWeight: "800" }],
+        body: ["14px", { lineHeight: "1.6" }],
+        code: ["12px", { lineHeight: "1.5", fontWeight: "500" }],
+        label: ["10px", { lineHeight: "1", letterSpacing: "0.1em", fontWeight: "700" }],
+      },
+    },
+  },
+};
+</script>
+<style>
+  body { background: #0a0a0a; color: #b9ccb2; font-family: 'JetBrains Mono', monospace; }
+  .scanlines { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.05) 50%); background-size: 100% 4px; pointer-events: none; z-index: 100; }
+  .glow { text-shadow: 0 0 8px rgba(0,230,57,0.4); }
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: #0a0a0a; }
+  ::-webkit-scrollbar-thumb { background: #3b4b37; }
+  ::-webkit-scrollbar-thumb:hover { background: #00e639; }
+  @keyframes blink { 50% { opacity: 0; } }
+  .cursor-blink { animation: blink 1s step-end infinite; }
+</style>
+</head>
+<body class="overflow-x-hidden selection:bg-primary-container selection:text-black">
+<div class="scanlines"></div>
+
+<header class="fixed top-0 w-full h-16 border-b border-border-color bg-surface/80 backdrop-blur z-50 flex items-center px-6 justify-between">
+  <div class="flex items-center gap-4">
+    <div class="w-8 h-8 border border-primary flex items-center justify-center">
+      <span class="text-primary font-headline font-black text-sm">M</span>
+    </div>
+    <span class="font-headline text-lg text-primary-dim font-black tracking-tight glow uppercase">Mimir CLI</span>
+    <span class="text-label text-text-muted uppercase hidden md:inline">v1.0.0</span>
+  </div>
+  <div class="flex items-center gap-6">
+    <a href="https://github.com/UreckChan/mimir-cli" class="text-label text-text-muted hover:text-primary transition-colors">GitHub</a>
+    <a href="https://www.npmjs.com/package/mimir-cli" class="text-label text-text-muted hover:text-primary transition-colors">npm</a>
+    <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+  </div>
+</header>
+
+<div class="flex pt-16 min-h-screen">
+  <aside class="w-64 border-r border-border-color bg-surface-low flex flex-col fixed h-[calc(100vh-64px)] top-16 overflow-y-auto hidden md:flex">
+    <div class="p-6 border-b border-border-color">
+      <div class="text-label text-primary-dim mb-1">MIMIR_V1.0</div>
+      <div class="text-[9px] text-text-muted uppercase tracking-widest">Terminal Active <span class="cursor-blink">_</span></div>
+    </div>
+    <nav class="flex-1 p-4 space-y-1">
+      <div class="text-label text-text-muted px-3 py-2">Documentation</div>
+      <a href="#install" class="block px-3 py-2 text-code text-text-secondary hover:bg-surface-high hover:text-primary">⬇ Install</a>
+      <a href="#quickstart" class="block px-3 py-2 text-code text-text-secondary hover:bg-surface-high hover:text-primary">⚡ Quick Start</a>
+      <a href="#architecture" class="block px-3 py-2 text-code text-text-secondary hover:bg-surface-high hover:text-primary"> Architecture</a>
+      <a href="#roles" class="block px-3 py-2 text-code text-text-secondary hover:bg-surface-high hover:text-primary"> 4 Roles</a>
+      <a href="#flags" class="block px-3 py-2 text-code text-text-secondary hover:bg-surface-high hover:text-primary"> CLI Flags</a>
+      <a href="#modes" class="block px-3 py-2 text-code text-text-secondary hover:bg-surface-high hover:text-primary"> Modes</a>
+      <a href="#providers" class="block px-3 py-2 text-code text-text-secondary hover:bg-surface-high hover:text-primary"> Providers</a>
+      <a href="#terminal" class="block px-3 py-2 text-code text-text-secondary hover:bg-surface-high hover:text-primary"> Terminal Adapters</a>
+      <a href="#config" class="block px-3 py-2 text-code text-text-secondary hover:bg-surface-high hover:text-primary"> Configuration</a>
+      <a href="#security" class="block px-3 py-2 text-code text-text-secondary hover:bg-surface-high hover:text-primary"> Security</a>
+      <a href="#vault" class="block px-3 py-2 text-code text-text-secondary hover:bg-surface-high hover:text-primary"> Vault</a>
+    </nav>
+    <div class="p-4 border-t border-border-color">
+      <a href="https://github.com/UreckChan" class="text-label text-text-muted hover:text-primary">@UreckChan</a>
+    </div>
+  </aside>
+
+  <main class="flex-1 ml-0 md:ml-64 p-6 md:p-10 max-w-5xl" id="content">
+    <!-- Content injected by JS -->
+  </main>
+</div>
+
+<script>
+const content = document.getElementById('content');
+
+const sections = [
+  { id: 'hero', html: `
+    <section class="mb-12 border border-border-color p-8 md:p-12 relative overflow-hidden">
+      <div class="absolute top-0 right-0 text-8xl text-surface-high font-headline font-black opacity-20 select-none">01</div>
+      <div class="relative z-10">
+        <h1 class="font-headline text-headline-xl text-primary-dim font-black uppercase tracking-tight glow">Mimir CLI</h1>
+        <p class="text-body text-text-secondary max-w-2xl mt-4 leading-relaxed">
+          Autonomous coding agent with <strong class="text-primary">4 specialized roles</strong> that work in a loop.
+          No API key required. Works in your terminal with zero setup.
+        </p>
+        <div class="flex gap-4 mt-8 flex-wrap">
+          <a href="#install" class="px-6 py-3 border border-primary text-primary font-headline font-bold text-sm hover:bg-primary hover:text-black transition-all">INSTALL</a>
+          <a href="https://github.com/UreckChan/mimir-cli" class="px-6 py-3 border border-border-color text-text-secondary text-code hover:border-primary hover:text-primary transition-all">VIEW SOURCE →</a>
+        </div>
+        <div class="flex gap-4 mt-6">
+          <span class="px-3 py-1 border border-primary-dim text-primary-dim text-label bg-primary-dim/5">PROTOCOL: v1.0.0</span>
+          <span class="px-3 py-1 border border-warning text-warning text-label bg-warning/5">STATUS: STABLE</span>
+        </div>
+      </div>
+    </section>` },
+  { id: 'install', title: 'Install', icon: '', html: `
+    <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4">
+      <span class="w-1 h-6 bg-primary"></span> Install
+    </h2>
+    <div class="border border-border-color bg-surface overflow-hidden">
+      <div class="bg-surface-high px-4 py-2 border-b border-border-color flex items-center gap-2">
+        <span class="w-2 h-2 rounded-full bg-error"></span>
+        <span class="w-2 h-2 rounded-full bg-warning"></span>
+        <span class="w-2 h-2 rounded-full bg-primary"></span>
+        <span class="ml-4 text-label text-text-muted">terminal</span>
+      </div>
+      <div class="p-6 text-code text-primary">
+        <span class="text-text-muted"># Install globally via npm</span><br/>
+        npm install -g mimir-cli<br/><br/>
+        <span class="text-text-muted"># No API key required. No account needed.</span><br/>
+        <span class="text-text-muted"># Uses Freebuff + Ollama by default.</span>
+      </div>
+    </div>
+    <div class="mt-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div class="border border-border-color p-4 bg-surface"><div class="text-label text-text-muted uppercase">macOS</div><div class="text-code text-primary mt-1">arm64</div></div>
+      <div class="border border-border-color p-4 bg-surface"><div class="text-label text-text-muted uppercase">Linux</div><div class="text-code text-primary mt-1">x86_64</div></div>
+      <div class="border border-border-color p-4 bg-surface"><div class="text-label text-text-muted uppercase">Windows</div><div class="text-code text-primary mt-1">x64</div></div>
+    </div>` },
+  { id: 'quickstart', title: 'Quick Start', icon: '', html: `
+    <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4">
+      <span class="w-1 h-6 bg-primary"></span> Quick Start
+    </h2>
+    <div class="space-y-4">
+      <div class="border border-border-color p-5 bg-surface-low">
+        <div class="text-label text-text-muted uppercase mb-2">Chat mode</div>
+        <code class="text-code text-primary">mimir --goal "Hello! What can you do?"</code>
+      </div>
+      <div class="border border-border-color p-5 bg-surface-low">
+        <div class="text-label text-text-muted uppercase mb-2">Project mode (full 4-role loop)</div>
+        <code class="text-code text-primary">mimir --goal "Create a CLI tool with tests" --cwd /my/project</code>
+      </div>
+      <div class="border border-border-color p-5 bg-surface-low">
+        <div class="text-label text-text-muted uppercase mb-2">Sidecar mode</div>
+        <code class="text-code text-primary">mimir --serve</code>
+      </div>
+    </div>` },
+  { id: 'architecture', title: 'Architecture', icon: '', html: `
+    <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4">
+      <span class="w-1 h-6 bg-primary"></span> Architecture
+    </h2>
+    <div class="border border-border-color bg-surface p-6">
+      <p class="text-body text-text-secondary mb-6">
+        Mimir runs on: <strong class="text-primary">PLAN → STEP → VERIFY → LEARN</strong>.
+      </p>
+      <div class="text-code bg-background p-4 border border-border-color overflow-x-auto whitespace-pre text-primary">
+        +----------------------+
+        |       Mimir          |
+        +----------+-----------+
+                   |
+        +----------+-----------+
+        v          v           v
+    +---------+ +---------+ +-----------+
+    |Architect| | Builder | | Inspector |
+    +----+----+ +----+----+ +-----+-----+
+         |           |             |
+         +-----------+-------------+
+                     v
+              +--------------+
+              | ModelRouter  |
+              +------+-------+
+                     |
+           +---------+---------+
+           v         v         v
+       +--------+ +-------+ +-------+
+       |Freebuff| |Ollama | | Cloud |
+       +--------+ +-------+ +-------+
+      </div>
+    </div>` },
+  { id: 'roles', title: 'The 4 Roles', icon: '', html: `
+    <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4">
+      <span class="w-1 h-6 bg-primary"></span> The 4 Roles
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-0 border border-border-color">
+      <div class="p-6 border-r border-b md:border-b-0 border-border-color bg-surface hover:bg-surface-container">
+        <span class="text-label text-primary-dim">ROLE_01</span>
+        <h3 class="font-headline text-xl text-[#38bdf8] font-black uppercase mt-2">Architect</h3>
+        <p class="text-code text-text-secondary mt-2">Plans strategy. Breaks down goals into steps. Refuses to start without a clear path.</p>
+      </div>
+      <div class="p-6 border-r border-border-color bg-surface hover:bg-surface-container">
+        <span class="text-label text-primary-dim">ROLE_02</span>
+        <h3 class="font-headline text-xl text-[#38bdf8] font-black uppercase mt-2">Builder</h3>
+        <p class="text-code text-text-secondary mt-2">Writes code, runs commands, installs deps. The heavy lifter.</p>
+      </div>
+      <div class="p-6 border-r border-border-color bg-surface hover:bg-surface-container">
+        <span class="text-label text-primary-dim">ROLE_03</span>
+        <h3 class="font-headline text-xl text-[#ff7b00] font-black uppercase mt-2">Inspector</h3>
+        <p class="text-code text-text-secondary mt-2">Verifies quality. Runs tests, checks code, rejects bad work.</p>
+      </div>
+      <div class="p-6 bg-surface hover:bg-surface-container">
+        <span class="text-label text-primary-dim">ROLE_04</span>
+        <h3 class="font-headline text-xl text-[#b9ccb2] font-black uppercase mt-2">Chronicler</h3>
+        <p class="text-code text-text-secondary mt-2">Documents lessons. Generates playbooks. Saves to vault.</p>
+      </div>
+    </div>` },
+  { id: 'flags', title: 'CLI Flags', icon: '', html: `
+    <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4">
+      <span class="w-1 h-6 bg-primary"></span> CLI Flags
+    </h2>
+    <div class="border border-border-color">
+      <div class="grid grid-cols-3 bg-surface-high text-label text-text-muted uppercase p-3 border-b border-border-color">
+        <div>Flag</div><div>Description</div><div>Default</div>
+      </div>
+      <div class="divide-y divide-border-color text-code">
+        <div class="grid grid-cols-3 p-3 hover:bg-surface-container"><span class="text-primary">--goal</span><span class="text-text-secondary">Your objective</span><span class="text-text-muted">-</span></div>
+        <div class="grid grid-cols-3 p-3 hover:bg-surface-container"><span class="text-primary">--cwd</span><span class="text-text-secondary">Working directory</span><span class="text-text-muted">current dir</span></div>
+        <div class="grid grid-cols-3 p-3 hover:bg-surface-container"><span class="text-primary">--budget</span><span class="text-text-secondary">Max budget in USD</span><span class="text-text-muted">unlimited</span></div>
+        <div class="grid grid-cols-3 p-3 hover:bg-surface-container"><span class="text-primary">--night</span><span class="text-text-secondary">Queue mode for overnight</span><span class="text-text-muted">false</span></div>
+        <div class="grid grid-cols-3 p-3 hover:bg-surface-container"><span class="text-primary">--no-sandbox</span><span class="text-text-secondary">Skip git worktree isolation</span><span class="text-text-muted">false</span></div>
+        <div class="grid grid-cols-3 p-3 hover:bg-surface-container"><span class="text-primary">--serve</span><span class="text-text-secondary">WebSocket sidecar mode</span><span class="text-text-muted">false</span></div>
+        <div class="grid grid-cols-3 p-3 hover:bg-surface-container"><span class="text-primary">--port</span><span class="text-text-secondary">Sidecar port</span><span class="text-text-muted">4317</span></div>
+        <div class="grid grid-cols-3 p-3 hover:bg-surface-container"><span class="text-primary">--setup</span><span class="text-text-secondary">Setup wizard</span><span class="text-text-muted">-</span></div>
+      </div>
+    </div>` },
+  { id: 'modes', title: 'Modes', icon: '', html: `
+    <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4">
+      <span class="w-1 h-6 bg-primary"></span> Modes
+    </h2>
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-0 border border-border-color">
+      <div class="p-6 border-r border-border-color bg-surface"><span class="text-label text-primary-dim">CHAT</span><p class="text-code text-text-secondary mt-2">Direct response. No tools, no loop. Best for casual chat.</p></div>
+      <div class="p-6 border-r border-border-color bg-surface"><span class="text-label text-warning">PLAN</span><p class="text-code text-text-secondary mt-2">Full loop with detailed planning. Step-by-step execution.</p></div>
+      <div class="p-6 bg-surface"><span class="text-label text-accent-orange">BUILD</span><p class="text-code text-text-secondary mt-2">Optimized for coding. Fast execution, shorter planning.</p></div>
+    </div>` },
+  { id: 'providers', title: 'Providers', icon: '', html: `
+    <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4">
+      <span class="w-1 h-6 bg-primary"></span> Supported Providers
+    </h2>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-0 border border-border-color" id="providers-grid"></div>` },
+  { id: 'terminal', title: 'Terminal Adapters', icon: '', html: `
+    <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4">
+      <span class="w-1 h-6 bg-primary"></span> Terminal Adapters
+    </h2>
+    <div class="border border-border-color">
+      <div class="grid grid-cols-4 bg-surface-high text-label text-text-muted uppercase p-3 border-b border-border-color">
+        <div>Terminal</div><div>Install</div><div>Subscription</div><div>Default</div>
+      </div>
+      <div class="divide-y divide-border-color text-code" id="terminal-grid"></div>
+    </div>` },
+  { id: 'config', title: 'Configuration', icon: '', html: `
+    <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4">
+      <span class="w-1 h-6 bg-primary"></span> Configuration
+    </h2>
+    <div class="space-y-6">
+      <div class="border border-border-color p-6 bg-surface">
+        <h3 class="font-headline text-lg text-primary uppercase mb-3">API Keys</h3>
+        <p class="text-body text-text-secondary mb-4">Set env vars or use Settings panel. Keys stored in system keychain.</p>
+        <div class="bg-background p-4 border border-border-color text-code text-primary">
+          export ANTHROPIC_API_KEY=sk-...<br/>
+          export OPENAI_API_KEY=sk-...<br/>
+          export DEEPSEEK_API_KEY=sk-...
+        </div>
+      </div>
+      <div class="border border-border-color p-6 bg-surface">
+        <h3 class="font-headline text-lg text-primary uppercase mb-3">Priority List (Failover)</h3>
+        <p class="text-body text-text-secondary mb-4">Models tried in order. Falls back automatically on failure.</p>
+        <div class="bg-background p-4 border border-border-color text-code">
+          1. deepseek/deepseek-v4-flash<br/>
+          2. anthropic/claude-sonnet-5<br/>
+          3. ollama/llama3.2:3b <span class="text-text-muted"># free local</span>
+        </div>
+      </div>
+    </div>` },
+  { id: 'security', title: 'Security', icon: '', html: `
+    <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4">
+      <span class="w-1 h-6 bg-primary"></span> Security
+    </h2>
+    <div class="border border-border-color p-4 bg-surface">
+      <p class="text-code text-text-secondary">API keys and credentials are automatically censored from logs and tool outputs before reaching the AI model. Three permission levels available.</p>
+    </div>` },
+  { id: 'vault', title: 'Alexandria Vault', icon: '', html: `
+    <h2 class="font-headline text-headline-lg text-primary-dim font-black uppercase mb-6 flex items-center gap-4">
+      <span class="w-1 h-6 bg-primary"></span> Alexandria Vault
+    </h2>
+    <p class="text-body text-text-secondary mb-6">Every lesson learned is stored in a persistent local vault with FTS5 search. Past solutions are recalled automatically when similar tasks appear.</p>
+    <div class="border border-border-color p-6 bg-surface">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div class="border border-border-color p-4 bg-surface-low hover:border-primary cursor-pointer">
+          <div class="text-label text-text-muted">LESSON</div>
+          <div class="text-code text-primary mt-1">Auth proxies need middleware</div>
+        </div>
+        <div class="border border-border-color p-4 bg-surface-low hover:border-primary cursor-pointer">
+          <div class="text-label text-text-muted">PLAYBOOK</div>
+          <div class="text-code text-primary mt-1">Deploy proxy infrastructure</div>
+        </div>
+        <div class="border border-border-color p-4 bg-surface-low hover:border-primary cursor-pointer">
+          <div class="text-label text-text-muted">SESSION</div>
+          <div class="text-code text-primary mt-1">Fix cold start latency</div>
+        </div>
+      </div>
+    </div>` },
+];
+
+const providers = [
+  ["Freebuff", "Cloud", "Free (ads)", "#00FF41"],
+  ["Ollama", "Local", "Free", "#00FF41"],
+  ["Anthropic", "Cloud", "API key", "#38bdf8"],
+  ["OpenAI", "Cloud", "API key", "#38bdf8"],
+  ["Google", "Cloud", "API key", "#38bdf8"],
+  ["DeepSeek", "Cloud", "API key", "#ff7b00"],
+  ["xAI (Grok)", "Cloud", "API key", "#ff7b00"],
+  ["Custom", "Any", "Configurable", "#b9ccb2"],
+];
+
+const terminals = [
+  ["Bash", "Built-in", "No", "✓"],
+  ["Claude Code", "npm i -g @anthropic-ai/claude-code", "Claude sub", "-"],
+  ["Codex CLI", "npm i -g @openai/codex", "OpenAI", "-"],
+  ["OpenCode", "npm i -g opencode", "No", "-"],
+  ["Aider", "pip install aider-chat", "No", "-"],
+];
+
+// Build content
+let mainHtml = '';
+for (const s of sections) {
+  mainHtml += `<section id="${s.id}" class="mb-16 scroll-mt-24">${s.html}</section>`;
+}
+content.innerHTML = mainHtml;
+
+// Providers grid
+const pg = document.getElementById('providers-grid');
+pg.innerHTML = providers.map(p => `
+  <div class="p-4 border-r border-b border-border-color bg-surface hover:bg-surface-container">
+    <div class="text-code font-bold" style="color:${p[3]}">${p[0]}</div>
+    <div class="text-label text-text-muted uppercase mt-1">${p[1]}</div>
+    <div class="text-code text-text-secondary text-[10px]">${p[2]}</div>
+  </div>
+`).join('');
+
+// Terminal grid
+const tg = document.getElementById('terminal-grid');
+tg.innerHTML = terminals.map(t => `
+  <div class="grid grid-cols-4 p-3 hover:bg-surface-container">
+    <span class="text-primary">${t[0]}</span>
+    <span class="text-text-secondary text-[11px]">${t[1]}</span>
+    <span class="text-text-muted text-[11px]">${t[2]}</span>
+    <span class="${t[3] === '\u2713' ? 'text-primary' : 'text-text-muted'}">${t[3]}</span>
+  </div>
+`).join('');
+</script>
+</body>
+</html>
