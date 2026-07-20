@@ -1,0 +1,27 @@
+{
+  "name": "mimir-cli",
+  "version": "1.0.0",
+  "description": "Mímir el Necio — Autonomous coding agent with 4 roles (Architect, Builder, Inspector, Chronicler)",
+  "author": "Uriel Gomez Becerril <urielgomezbecerril@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/UreckChan/mimir-cli.git"
+  },
+  "keywords": ["ai", "agent", "cli", "coding", "terminal"],
+  "bin": {
+    "mimir": "./bin/mimir.js"
+  },
+  "files": [
+    "bin/"
+  ],
+  "os": ["darwin", "linux", "win32"],
+  "cpu": ["x64", "arm64"],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "cd ../.. && bun run build:mimir-cli",
+    "prepublishOnly": "npm run build"
+  }
+}
