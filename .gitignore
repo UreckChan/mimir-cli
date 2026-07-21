@@ -1,1 +1,4 @@
-
+node_modules/
+bin/mimir-*
+!bin/mimir.js
+.DS_Store
