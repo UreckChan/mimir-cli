@@ -104,6 +104,13 @@
 </style>
 </head>
 <body>
+<!--
+  Página estática sin build step — el número de versión (v1.0.0) está
+  hardcodeado en 6 lugares de este archivo (badge del header, MIMIR_V1.0 del
+  sidebar, badge de protocolo, y las 3 URLs de descarga de releases/download/).
+  Al publicar una vX.Y.Z nueva: actualizar package.json Y buscar/reemplazar
+  "v1.0.0" -> "vX.Y.Z" aquí también. No hay fuente única automática todavía.
+-->
 <div class="scanlines"></div>
 <div class="header">
   <div class="logo">ᛗ</div>
@@ -159,8 +166,8 @@
   <div style="position:absolute;top:0;right:20px;font-size:100px;color:var(--surface-high);font-family:Montserrat,sans-serif;font-weight:900;opacity:0.2;pointer-events:none">01</div>
   <h2 data-lang="en">Mimir CLI</h2>
   <h2 data-lang="es">Mimir CLI</h2>
-  <p data-lang="en">Autonomous coding agent with <strong class="text-primary">4 specialized roles</strong> that work in a loop. No API key required. Works in your terminal with zero setup.</p>
-  <p data-lang="es">Agente aut&oacute;nomo de c&oacute;digo con <strong class="text-primary">4 roles especializados</strong> que trabajan en ciclo. Sin API key. Funciona en tu terminal sin configuraci&oacute;n.</p>
+  <p data-lang="en">Autonomous coding agent with <strong class="text-primary">4 specialized roles</strong> that work in a loop. Auto-detects models you already have installed (Ollama, terminal CLIs) — no API key needed if you're already running Ollama locally. Otherwise <code>mimir --setup</code> walks you through it.</p>
+  <p data-lang="es">Agente aut&oacute;nomo de c&oacute;digo con <strong class="text-primary">4 roles especializados</strong> que trabajan en ciclo. Detecta autom&aacute;ticamente lo que ya tengas instalado (Ollama, CLIs de terminal) — sin API key si ya corres Ollama localmente. Si no, <code>mimir --setup</code> te gu&iacute;a paso a paso.</p>
   <div class="actions">
     <a href="#install" class="btn btn-primary" data-lang="en">INSTALL</a>
     <a href="#install" class="btn btn-primary" data-lang="es">INSTALAR</a>
@@ -186,7 +193,7 @@
     <div class="terminal">
       <span class="comment"># <span data-lang="en">Install globally via npm</span><span data-lang="es">Instala globalmente via npm</span></span><br>
       npm install -g mimir-cli<br><br>
-      <span class="comment"># <span data-lang="en">No API key required. No account needed. Uses Freebuff + Ollama by default.</span><span data-lang="es">Sin API key. Sin cuenta. Usa Freebuff + Ollama por defecto.</span></span>
+      <span class="comment"># <span data-lang="en">Auto-detects installed models. Run 'mimir --setup' if you need an API key or free mode.</span><span data-lang="es">Detecta modelos instalados. Corre 'mimir --setup' si necesitas una API key o modo gratuito.</span></span>
     </div>
   </div>
   <div class="card mt-4">
@@ -298,12 +305,12 @@
 <div class="section" id="terminal">
   <h2 class="section-title"><span class="bar"></span> <span data-lang="en">Terminal Adapters</span><span data-lang="es">Adaptadores de Terminal</span></h2>
   <table>
-    <tr><th>Terminal</th><th>Install</th><th data-lang="en">Subscription</th><th data-lang="es">Suscripci&oacute;n</th><th>Default</th></tr>
-    <tr><td class="text-primary">Bash</td><td>Built-in</td><td>No</td><td class="text-primary">✓</td></tr>
-    <tr><td class="text-primary">Claude Code</td><td>npm i -g @anthropic-ai/claude-code</td><td data-lang="en">Claude sub</td><td data-lang="es">Suscripci&oacute;n Claude</td><td>-</td></tr>
-    <tr><td class="text-primary">Codex CLI</td><td>npm i -g @openai/codex</td><td>OpenAI</td><td>-</td></tr>
-    <tr><td class="text-primary">OpenCode</td><td>npm i -g opencode</td><td>No</td><td>-</td></tr>
-    <tr><td class="text-primary">Aider</td><td>pip install aider-chat</td><td>No</td><td>-</td></tr>
+    <tr><th>Terminal</th><th data-lang="en">Install</th><th data-lang="es">Instalaci&oacute;n</th><th data-lang="en">Subscription</th><th data-lang="es">Suscripci&oacute;n</th><th>Default</th></tr>
+    <tr><td class="text-primary">Bash</td><td data-lang="en">Built-in</td><td data-lang="es">Integrado</td><td data-lang="en">No</td><td data-lang="es">No</td><td class="text-primary">✓</td></tr>
+    <tr><td class="text-primary">Claude Code</td><td colspan="2">npm i -g @anthropic-ai/claude-code</td><td data-lang="en">Claude sub</td><td data-lang="es">Suscripci&oacute;n Claude</td><td>-</td></tr>
+    <tr><td class="text-primary">Codex CLI</td><td colspan="2">npm i -g @openai/codex</td><td data-lang="en">OpenAI sub</td><td data-lang="es">Suscripci&oacute;n OpenAI</td><td>-</td></tr>
+    <tr><td class="text-primary">OpenCode</td><td colspan="2">npm i -g opencode</td><td data-lang="en">No</td><td data-lang="es">No</td><td>-</td></tr>
+    <tr><td class="text-primary">Aider</td><td colspan="2">pip install aider-chat</td><td data-lang="en">No</td><td data-lang="es">No</td><td>-</td></tr>
   </table>
 </div>
 
@@ -320,7 +327,9 @@
     <h3 style="font-size:16px;font-weight:800;text-transform:uppercase;color:var(--primary);margin-bottom:12px">Priority List</h3>
     <p class="text-secondary" style="font-size:12px;margin-bottom:16px" data-lang="en">Models tried in order. Falls back automatically on failure.</p>
     <p class="text-secondary" style="font-size:12px;margin-bottom:16px" data-lang="es">Modelos en orden de prioridad. Fallback autom&aacute;tico.</p>
-    <div class="terminal">1. deepseek/deepseek-v4-flash<br>2. anthropic/claude-sonnet-5<br>3. ollama/llama3.2:3b <span class="comment"># free</span></div>
+    <div class="terminal">1. anthropic/claude-sonnet-5 <span class="comment">#</span> <span data-lang="en">cloud, needs API key</span><span data-lang="es">cloud, necesita API key</span><br>2. deepseek/deepseek-v4-flash <span class="comment">#</span> <span data-lang="en">cloud, needs your own DeepSeek key</span><span data-lang="es">cloud, necesita tu propia key de DeepSeek</span><br>3. ollama/llama3.2:3b <span class="comment">#</span> <span data-lang="en">local, free if Ollama is running</span><span data-lang="es">local, gratis si Ollama est&aacute; corriendo</span></div>
+    <p class="text-secondary" style="font-size:11px;margin-top:12px" data-lang="en"><code>deepseek/*</code> is the DeepSeek cloud provider (your own API key) — different from <code>freebuff/*</code>, which only appears in the list if you enable free mode in Settings.</p>
+    <p class="text-secondary" style="font-size:11px;margin-top:12px" data-lang="es"><code>deepseek/*</code> es el proveedor cloud de DeepSeek (tu propia API key) — distinto de <code>freebuff/*</code>, que solo aparece en la lista si activas el modo gratuito en Ajustes.</p>
   </div>
 </div>
 
