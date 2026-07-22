@@ -1,6 +1,6 @@
 {
   "name": "mimir-cli",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "description": "M\u00edmir CLI \u2014 Autonomous coding agent with 4 roles (Architect, Builder, Inspector, Chronicler)",
   "author": "Uriel Gomez Becerril <urielgomezbecerril@gmail.com>",
   "license": "MIT",
