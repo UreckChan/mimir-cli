@@ -114,13 +114,34 @@ Mímir also has a native desktop app with:
 - Settings panel for API keys and flags
 - Real-time streaming responses
 - Conversation history
-- Dark terminal theme
+- Dark/light theme
 
 ```bash
 # Run in browser (dev mode)
 mimir --serve
 # Open http://localhost:1420
 ```
+
+### macOS Gatekeeper
+
+The desktop .dmg and .app bundles aren't code-signed yet (no Apple Developer license).
+On first launch, macOS will show "Apple could not verify Mímir is free of malware."
+
+To bypass:
+
+**Option 1** — Right-click the .app → Open (works once)
+
+**Option 2** — Remove the quarantine flag:
+```bash
+xattr -d com.apple.quarantine /Applications/Mímir.app
+```
+
+**Option 3** — Install via npm instead (no Gatekeeper):
+```bash
+npm install -g mimir-cli
+mimir --serve
+```
+Then access the UI at http://localhost:1420 (desktop-like experience in browser).
 
 ## Supported Providers
 
