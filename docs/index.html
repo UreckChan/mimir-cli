@@ -1,473 +1,719 @@
 <!DOCTYPE html>
-<html class="lang-en">
+<html lang="es" data-lang="es">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mímir CLI — Autonomous Coding Agent</title>
-<link rel="icon" type="image/svg+xml" href="./favicon.svg">\n<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<title>Mímir — Agente autónomo de código</title>
+<meta name="description" content="Agente autónomo de código con 4 roles en ciclo PLAN→STEP→VERIFY→LEARN. Terminal (TUI) y app de escritorio, multi-modelo, memoria persistente, honestidad brutal.">
+<link rel="icon" type="image/svg+xml" href="./favicon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=IBM+Plex+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --primary: #00FF41; --primary-dim: #00e639; --bg: #0a0a0a; --surface: #131313;
-    --surface-low: #1c1b1b; --surface-container: #201f1f; --surface-high: #2a2a2a;
-    --border: #3b4b37; --text: #e5e2e1; --text-secondary: #b9ccb2; --text-muted: #6b6b80;
-    --accent: #ff7b00; --warning: #ffcc00; --error: #ef4444; --arch: #38bdf8; --insp: #ff7b00;
+    --ink:      #0b0e12;   /* deep well */
+    --stone:    #12161c;   /* raised surface */
+    --stone-2:  #171c23;   /* nested surface */
+    --stone-3:  #1e242c;   /* hover */
+    --line:     #262d36;   /* hairline */
+    --line-2:   #333c47;
+    --gold:     #d4a95a;   /* rune inlay — THE accent */
+    --gold-dim: #a8814080;
+    --parch:    #e9e3d5;   /* aged vellum — primary text */
+    --parch-2:  #bdb8ac;   /* body */
+    --muted:    #7c8593;   /* captions */
+    --ok:       #7fb59a;
+    --warn:     #d8b45a;
+    --arch:     #8fb7cf;
+    --insp:     #cf9a6b;
+    --maxw:     1080px;
+    --nav:      248px;
+    --hdr:      60px;
   }
   * { margin: 0; padding: 0; box-sizing: border-box; }
-  body { background: var(--bg); color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; }
-  .scanlines { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: linear-gradient(rgba(18,16,16,0) 50%, rgba(0,0,0,0.05) 50%); background-size: 100% 4px; pointer-events: none; z-index: 999; }
-  ::-webkit-scrollbar { width: 6px; }
-  ::-webkit-scrollbar-track { background: var(--bg); }
-  ::-webkit-scrollbar-thumb { background: var(--border); }
-  ::-webkit-scrollbar-thumb:hover { background: var(--primary-dim); }
-  h1, h2, h3, h4 { font-family: 'Montserrat', sans-serif; color: var(--text); }
-  .glow { text-shadow: 0 0 8px rgba(0,230,57,0.4); }
-  a { color: var(--primary-dim); text-decoration: none; }
-  a:hover { text-decoration: underline; }
-  code { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
-  .header { position: fixed; top: 0; width: 100%; height: 56px; background: var(--surface); border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 16px; z-index: 100; gap: 12px; }
-  .header .logo { width: 28px; height: 28px; border: 1px solid var(--primary); display: flex; align-items: center; justify-content: center; font-family: 'Montserrat', sans-serif; font-weight: 900; font-size: 14px; color: var(--primary); }
-  .header h1 { font-size: 16px; font-weight: 900; text-transform: uppercase; color: var(--primary-dim); }
-  .header .version { font-size: 10px; color: var(--text-muted); text-transform: uppercase; }
-  .lang-btn { padding: 2px 8px; font-size: 10px; font-family: 'JetBrains Mono', monospace; cursor: pointer; border: 1px solid var(--border); background: transparent; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
-  .lang-btn.active { background: rgba(0,230,57,0.1); color: var(--primary-dim); }
-  .lang-btn:first-child { border-right: none; }
-  .sidebar { position: fixed; top: 56px; left: 0; width: 220px; height: calc(100vh - 56px); background: var(--surface-low); border-right: 1px solid var(--border); z-index: 50; transition: transform 0.2s; display: flex; flex-direction: column; }
-  .sidebar .brand { padding: 16px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-  .sidebar .brand .sub { font-size: 9px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
-  .sidebar #sidebar-links { flex: 1; overflow-y: auto; }
-  .sidebar a { display: block; padding: 8px 16px; font-size: 11px; color: var(--text-secondary); transition: all 0.1s; }
-  .sidebar a:hover { background: var(--surface-high); color: var(--primary-dim); text-decoration: none; }
-  .sidebar .footer { padding: 12px 16px; border-top: 1px solid var(--border); font-size: 10px; color: var(--text-muted); flex-shrink: 0; }
-  .main { margin-left: 220px; padding: 24px; max-width: 960px; min-height: calc(100vh - 56px); padding-bottom: 80px; }
-  .hero { border: 1px solid var(--border); padding: 40px; margin-bottom: 48px; position: relative; overflow: hidden; }
-  .hero h2 { font-size: 40px; font-weight: 900; text-transform: uppercase; color: var(--primary-dim); }
-  .hero p { font-size: 14px; color: var(--text-secondary); max-width: 600px; margin-top: 12px; line-height: 1.6; }
-  .hero .actions { margin-top: 24px; display: flex; gap: 12px; flex-wrap: wrap; }
-  .btn { padding: 10px 24px; font-family: 'Montserrat', sans-serif; font-weight: 700; font-size: 13px; cursor: pointer; border: none; transition: all 0.15s; }
-  .btn-primary { background: var(--primary); color: #000; }
-  .btn-primary:hover { opacity: 0.8; }
-  .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text-secondary); }
-  .btn-outline:hover { border-color: var(--primary); color: var(--primary-dim); }
-  .badge { display: inline-block; padding: 4px 10px; font-size: 9px; font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 0.1em; border: 1px solid; margin-right: 8px; margin-top: 16px; }
-  .badge-green { border-color: var(--primary-dim); color: var(--primary-dim); background: rgba(0,230,57,0.05); }
-  .badge-yellow { border-color: var(--warning); color: var(--warning); background: rgba(255,204,0,0.05); }
-  .section { margin-bottom: 64px; scroll-margin-top: 72px; }
-  .section-title { font-size: 24px; font-weight: 800; text-transform: uppercase; color: var(--primary-dim); margin-bottom: 20px; display: flex; align-items: center; gap: 12px; }
-  .section-title .bar { width: 4px; height: 24px; background: var(--primary); display: inline-block; }
-  .card { border: 1px solid var(--border); background: var(--surface); padding: 16px; margin-bottom: 12px; }
-  .card-header { background: var(--surface-high); padding: 10px 16px; border-bottom: 1px solid var(--border); font-size: 10px; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.1em; }
-  .terminal { background: var(--bg); border: 1px solid var(--border); padding: 16px; font-size: 12px; color: var(--primary); overflow-x: auto; }
-  .terminal .comment { color: var(--text-muted); }
-  .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; border: 1px solid var(--border); }
-  .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border: 1px solid var(--border); }
-  .grid-2 { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0; border: 1px solid var(--border); }
-  .grid-item { padding: 16px; border-right: 1px solid var(--border); border-bottom: 1px solid var(--border); }
-  .grid-item:hover { background: var(--surface-container); }
-  .label { font-size: 9px; font-family: 'JetBrains Mono', monospace; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); }
-  table { width: 100%; border-collapse: collapse; border: 1px solid var(--border); font-size: 12px; }
-  th { background: var(--surface-high); padding: 8px 12px; text-align: left; font-size: 9px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); border-bottom: 1px solid var(--border); }
-  td { padding: 8px 12px; border-bottom: 1px solid var(--border); }
-  tr:hover { background: var(--surface-container); }
-  .footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 24px; }
-  .footer .col h4 { font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--text-muted); margin-bottom: 12px; }
-  .footer .col a { display: block; font-size: 11px; margin-bottom: 6px; }
-  .lang-en [data-lang], .lang-es [data-lang] { display: none; }
-  .lang-en [data-lang="en"] { display: block; }
-  .lang-en th[data-lang="en"], .lang-en td[data-lang="en"] { display: table-cell; }
-  .lang-es [data-lang="es"] { display: block; }
-  .lang-es th[data-lang="es"], .lang-es td[data-lang="es"] { display: table-cell; }
-  .mobile-menu-btn { display: none; position: fixed; bottom: 16px; right: 16px; width: 48px; height: 48px; background: var(--primary); color: #000; border: none; font-size: 20px; font-weight: 900; cursor: pointer; z-index: 200; box-shadow: 0 0 20px rgba(0,255,65,0.3); font-family: 'Montserrat', sans-serif; }
-  @media (max-width: 767px) {
-    .sidebar { transform: translateX(-100%); }
-    .sidebar.open { transform: translateX(0); }
-    .sidebar-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 49; }
-    .sidebar-overlay.open { display: block; }
-    .main { margin-left: 0; padding: 16px; }
-    .hero h2 { font-size: 28px; }
-    .grid-3, .grid-4 { grid-template-columns: 1fr; }
-    .grid-2 { grid-template-columns: 1fr; }
-    .mobile-menu-btn { display: flex; align-items: center; justify-content: center; }
+  html { scroll-behavior: smooth; }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } *,*::before,*::after { animation: none !important; transition: none !important; } }
+  body {
+    background: var(--ink);
+    color: var(--parch-2);
+    font-family: 'IBM Plex Sans', system-ui, sans-serif;
+    font-size: 15px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
   }
-  .mt-2 { margin-top: 8px; }
-  .mt-4 { margin-top: 16px; }
-  .mt-6 { margin-top: 24px; }
-  .mb-4 { margin-bottom: 16px; }
-  .gap-4 { gap: 16px; }
-  .flex { display: flex; }
-  .flex-wrap { flex-wrap: wrap; }
-  .items-center { align-items: center; }
-  .text-primary { color: var(--primary); }
-  .text-secondary { color: var(--text-secondary); }
-  .text-muted { color: var(--text-muted); }
-  .text-arch { color: var(--arch); }
-  .text-insp { color: var(--insp); }
+  /* faint well-shaft glow behind the page */
+  body::before {
+    content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
+    background:
+      radial-gradient(60% 45% at 78% -5%, rgba(212,169,90,0.06), transparent 70%),
+      radial-gradient(50% 40% at 0% 100%, rgba(143,183,207,0.05), transparent 70%);
+  }
+  ::selection { background: rgba(212,169,90,0.25); color: var(--parch); }
+  ::-webkit-scrollbar { width: 9px; height: 9px; }
+  ::-webkit-scrollbar-track { background: var(--ink); }
+  ::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 6px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--gold-dim); }
+
+  h1,h2,h3 { font-family: 'Fraunces', Georgia, serif; color: var(--parch); font-weight: 600; line-height: 1.12; letter-spacing: -0.01em; }
+  a { color: var(--gold); text-decoration: none; }
+  a:hover { text-decoration: underline; text-underline-offset: 3px; }
+  code, .mono { font-family: 'JetBrains Mono', ui-monospace, monospace; }
+  strong { color: var(--parch); font-weight: 600; }
+
+  .eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: var(--gold); }
+  .runes { font-family: 'Fraunces', serif; }
+
+  /* ── Header ─────────────────────────────── */
+  .header {
+    position: fixed; top: 0; left: 0; right: 0; height: var(--hdr); z-index: 100;
+    display: flex; align-items: center; gap: 14px; padding: 0 20px;
+    background: rgba(11,14,18,0.82); backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--line);
+  }
+  .brand-mark {
+    width: 34px; height: 34px; display: grid; place-items: center; flex-shrink: 0;
+    border: 1px solid var(--gold-dim); border-radius: 8px;
+    color: var(--gold); font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600;
+    background: linear-gradient(160deg, rgba(212,169,90,0.12), transparent);
+  }
+  .brand-name { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 600; color: var(--parch); letter-spacing: 0.01em; }
+  .ver-pill { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--gold); border: 1px solid var(--gold-dim); border-radius: 999px; padding: 2px 9px; }
+  .spacer { flex: 1; }
+  .lang-toggle { display: inline-flex; border: 1px solid var(--line-2); border-radius: 7px; overflow: hidden; }
+  .lang-toggle button {
+    font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.1em;
+    padding: 5px 10px; background: transparent; color: var(--muted); border: 0; cursor: pointer;
+  }
+  .lang-toggle button.on { background: rgba(212,169,90,0.14); color: var(--gold); }
+  .hdr-gh { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--parch-2); }
+  .hdr-gh:hover { color: var(--gold); text-decoration: none; }
+  @media (max-width: 720px) { .hdr-gh { display: none; } }
+
+  /* ── Sidebar ────────────────────────────── */
+  .sidebar {
+    position: fixed; top: var(--hdr); left: 0; width: var(--nav); height: calc(100vh - var(--hdr)); z-index: 60;
+    background: var(--stone); border-right: 1px solid var(--line);
+    overflow-y: auto; padding: 22px 0 40px; transition: transform 0.22s ease;
+  }
+  .nav-group { padding: 10px 0; }
+  .nav-group + .nav-group { border-top: 1px solid var(--line); }
+  .nav-head { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted); padding: 6px 22px; }
+  .sidebar a {
+    display: flex; align-items: center; gap: 10px; padding: 7px 22px;
+    font-size: 13.5px; color: var(--parch-2); border-left: 2px solid transparent;
+  }
+  .sidebar a:hover { color: var(--parch); background: var(--stone-2); text-decoration: none; }
+  .sidebar a.active { color: var(--gold); border-left-color: var(--gold); background: linear-gradient(90deg, rgba(212,169,90,0.08), transparent); }
+  .sidebar a .idx { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); width: 16px; }
+  .sidebar a.active .idx { color: var(--gold); }
+
+  /* ── Layout ─────────────────────────────── */
+  .main { margin-left: var(--nav); position: relative; z-index: 1; }
+  .wrap { max-width: var(--maxw); margin: 0 auto; padding: 0 32px; }
+  .section { padding: 56px 0; border-bottom: 1px solid var(--line); scroll-margin-top: calc(var(--hdr) + 12px); }
+  .section:last-of-type { border-bottom: 0; }
+  .sec-head { margin-bottom: 26px; }
+  .sec-head h2 { font-size: clamp(1.5rem, 3vw, 1.95rem); margin-top: 6px; }
+  .sec-head p.lede { color: var(--parch-2); margin-top: 10px; max-width: 62ch; }
+
+  /* ── Hero ───────────────────────────────── */
+  .hero { padding: clamp(64px, 12vh, 120px) 0 64px; border-bottom: 1px solid var(--line); position: relative; overflow: hidden; }
+  .hero .glyph {
+    position: absolute; right: -2vw; top: 50%; transform: translateY(-50%);
+    font-family: 'Fraunces', serif; font-size: clamp(200px, 34vw, 460px); line-height: 1;
+    color: transparent; -webkit-text-stroke: 1px rgba(212,169,90,0.14); pointer-events: none; user-select: none;
+  }
+  .hero .eyebrow { display: inline-block; margin-bottom: 20px; }
+  .hero h1 { font-size: clamp(2.4rem, 6.2vw, 4.4rem); max-width: 15ch; }
+  .hero h1 .em { color: var(--gold); font-style: italic; }
+  .hero .tag { font-size: clamp(1.02rem, 1.6vw, 1.2rem); color: var(--parch-2); max-width: 56ch; margin-top: 22px; line-height: 1.6; }
+  .hero .cmd { margin-top: 30px; max-width: 480px; }
+  .hero .actions { margin-top: 22px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center; }
+  .hero .status { margin-top: 30px; display: flex; gap: 10px; flex-wrap: wrap; }
+
+  /* ── Buttons ────────────────────────────── */
+  .btn { display: inline-flex; align-items: center; gap: 8px; font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; font-weight: 600; padding: 11px 22px; border-radius: 9px; cursor: pointer; border: 1px solid transparent; transition: transform 0.12s ease, background 0.15s ease; }
+  .btn:hover { text-decoration: none; transform: translateY(-1px); }
+  .btn-gold { background: var(--gold); color: #241a08; }
+  .btn-gold:hover { background: #e0b869; }
+  .btn-ghost { border-color: var(--line-2); color: var(--parch); background: var(--stone); }
+  .btn-ghost:hover { border-color: var(--gold-dim); color: var(--gold); }
+
+  .chip { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.08em; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--line-2); color: var(--parch-2); display: inline-flex; align-items: center; gap: 7px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+  .dot.gold { background: var(--gold); box-shadow: 0 0 8px var(--gold-dim); }
+
+  /* ── Terminal block ─────────────────────── */
+  .term { background: #090c10; border: 1px solid var(--line); border-radius: 11px; overflow: hidden; }
+  .term-bar { display: flex; align-items: center; gap: 7px; padding: 9px 13px; border-bottom: 1px solid var(--line); background: var(--stone-2); }
+  .term-bar .tb { width: 10px; height: 10px; border-radius: 50%; background: var(--line-2); }
+  .term-bar .tb.r { background: #c26; } .term-bar .tb.y { background: var(--gold); } .term-bar .tb.g { background: var(--ok); }
+  .term-bar .lbl { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); margin-left: 6px; letter-spacing: 0.06em; }
+  .term-bar .copy { margin-left: auto; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); background: transparent; border: 1px solid var(--line-2); border-radius: 6px; padding: 3px 9px; cursor: pointer; }
+  .term-bar .copy:hover { color: var(--gold); border-color: var(--gold-dim); }
+  .term-body { padding: 16px 18px; font-family: 'JetBrains Mono', monospace; font-size: 13px; line-height: 1.7; color: var(--parch); overflow-x: auto; white-space: pre; }
+  .term-body .c { color: var(--muted); } /* comment */
+  .term-body .p { color: var(--gold); }  /* prompt / key token */
+  .term-body .ok { color: var(--ok); }
+
+  /* ── Cards & grids ──────────────────────── */
+  .grid { display: grid; gap: 14px; }
+  .g2 { grid-template-columns: repeat(2, 1fr); }
+  .g3 { grid-template-columns: repeat(3, 1fr); }
+  .g4 { grid-template-columns: repeat(4, 1fr); }
+  .card { background: var(--stone); border: 1px solid var(--line); border-radius: 12px; padding: 20px; }
+  .card.pad-lg { padding: 24px; }
+
+  /* download tiles */
+  .dl { display: flex; flex-direction: column; gap: 5px; background: var(--stone); border: 1px solid var(--line); border-radius: 12px; padding: 18px; transition: border-color 0.15s ease, transform 0.12s ease, background 0.15s ease; }
+  .dl:hover { border-color: var(--gold-dim); background: var(--stone-2); transform: translateY(-2px); text-decoration: none; }
+  .dl .os { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
+  .dl .file { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--gold); word-break: break-all; }
+  .dl .meta { font-size: 12px; color: var(--muted); }
+  .dl .meta a { font-size: 12px; }
+
+  .role { background: var(--stone); border: 1px solid var(--line); border-radius: 12px; padding: 20px; position: relative; }
+  .role .rune { position: absolute; top: 16px; right: 18px; font-family: 'Fraunces', serif; font-size: 26px; color: var(--gold-dim); }
+  .role h3 { font-size: 1.15rem; margin: 4px 0 8px; }
+  .role .step { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.16em; color: var(--muted); text-transform: uppercase; }
+  .role p { font-size: 13.5px; color: var(--parch-2); }
+  .role.arch h3 { color: var(--arch); } .role.insp h3 { color: var(--insp); }
+
+  .tile { background: var(--stone); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+  .tile .k { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .tile .v { color: var(--parch); font-weight: 500; margin-top: 6px; }
+  .tile p { font-size: 13.5px; color: var(--parch-2); margin-top: 6px; }
+
+  /* ── Tables ─────────────────────────────── */
+  .tbl-wrap { border: 1px solid var(--line); border-radius: 12px; overflow-x: auto; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; }
+  th { text-align: left; font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); padding: 12px 16px; background: var(--stone-2); border-bottom: 1px solid var(--line); white-space: nowrap; }
+  td { padding: 11px 16px; border-bottom: 1px solid var(--line); color: var(--parch-2); }
+  tbody tr:last-child td { border-bottom: 0; }
+  tbody tr:hover td { background: var(--stone); }
+  td .mono, td.k { color: var(--gold); font-family: 'JetBrains Mono', monospace; font-size: 12.5px; }
+
+  .note { font-size: 13px; color: var(--muted); margin-top: 14px; line-height: 1.6; }
+  .note code { color: var(--parch-2); background: var(--stone-2); padding: 1px 6px; border-radius: 5px; font-size: 12px; }
+  .diagram { width: 100%; border-radius: 10px; margin-top: 12px; background: #0d1116; }
+
+  /* callout */
+  .callout { display: flex; gap: 14px; background: linear-gradient(180deg, var(--stone), var(--ink)); border: 1px solid var(--line); border-left: 2px solid var(--gold); border-radius: 12px; padding: 18px 20px; }
+  .callout .ic { font-family: 'Fraunces', serif; font-size: 22px; color: var(--gold); flex-shrink: 0; line-height: 1.2; }
+  .callout p { font-size: 13.5px; color: var(--parch-2); }
+
+  /* ── Footer ─────────────────────────────── */
+  footer { margin-left: var(--nav); border-top: 1px solid var(--line); background: var(--stone); position: relative; z-index: 1; }
+  .foot { max-width: var(--maxw); margin: 0 auto; padding: 40px 32px; display: flex; justify-content: space-between; gap: 32px; flex-wrap: wrap; }
+  .foot h4 { font-family: 'Fraunces', serif; font-size: 17px; color: var(--parch); }
+  .foot .col { display: flex; flex-direction: column; gap: 7px; }
+  .foot .col .h { font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .foot .col a, .foot .col span { font-size: 13.5px; color: var(--parch-2); }
+  .foot .col a:hover { color: var(--gold); }
+  .foot .credit { font-size: 12.5px; color: var(--muted); max-width: 30ch; margin-top: 8px; }
+
+  /* ── i18n ───────────────────────────────── */
+  [data-i="en"], [data-i="es"] { display: none; }
+  html[data-lang="en"] [data-i="en"] { display: revert; }
+  html[data-lang="es"] [data-i="es"] { display: revert; }
+
+  /* ── Mobile ─────────────────────────────── */
+  .menu-btn { display: none; }
+  .scrim { display: none; }
+  @media (max-width: 900px) {
+    :root { --nav: 0px; }
+    .sidebar { transform: translateX(-100%); width: 264px; box-shadow: 0 0 40px rgba(0,0,0,0.5); }
+    .sidebar.open { transform: translateX(0); }
+    .scrim { position: fixed; inset: 0; z-index: 55; background: rgba(0,0,0,0.5); }
+    .scrim.open { display: block; }
+    .menu-btn { display: inline-grid; place-items: center; width: 36px; height: 36px; border: 1px solid var(--line-2); border-radius: 8px; background: var(--stone); color: var(--gold); cursor: pointer; font-size: 16px; }
+    .g4, .g3, .g2 { grid-template-columns: 1fr; }
+    .wrap, .foot { padding-left: 20px; padding-right: 20px; }
+    .hero .glyph { opacity: 0.6; }
+  }
+  @media (min-width: 901px) { .menu-btn { display: none; } }
+  @media (max-width: 560px) {
+    .g4, .g3, .g2 { grid-template-columns: 1fr; }
+  }
 </style>
 </head>
 <body>
-<!--
-  Página estática sin build step — el número de versión (v1.0.0) está
-  hardcodeado en 6 lugares de este archivo (badge del header, MIMIR_V1.0 del
-  sidebar, badge de protocolo, y las 3 URLs de descarga de releases/download/).
-  Al publicar una vX.Y.Z nueva: actualizar package.json Y buscar/reemplazar
-  "v1.0.0" -> "vX.Y.Z" aquí también. No hay fuente única automática todavía.
--->
-<div class="scanlines"></div>
-<div class="header">
-  <div class="logo">ᛗ</div>
-  <h1>Mimir CLI</h1>
-  <span class="version">v1.0.5</span>
-  <div style="flex:1"></div>
-  <div>
-    <button class="lang-btn" onclick="setLang('en')" id="lben">EN</button>
-    <button class="lang-btn" onclick="setLang('es')" id="lbes">ES</button>
-  </div>
-</div>
 
-<div class="sidebar" id="sidebar">
-  <div class="brand">
-    <div style="font-size:10px;color:var(--primary-dim);letter-spacing:0.1em;text-transform:uppercase">MIMIR_V1.0.5</div>
-    <div class="sub">Terminal Active <span style="animation:blink 1s step-end infinite">_</span></div>
+<header class="header">
+  <button class="menu-btn" id="menuBtn" aria-label="Menú">☰</button>
+  <div class="brand-mark runes">ᛗ</div>
+  <span class="brand-name">Mímir</span>
+  <span class="ver-pill" id="verPill">v1.0.5</span>
+  <span class="spacer"></span>
+  <div class="lang-toggle" role="group" aria-label="Idioma">
+    <button id="btn-es" onclick="setLang('es')">ES</button>
+    <button id="btn-en" onclick="setLang('en')">EN</button>
   </div>
-  <div id="sidebar-links">
-    <div class="label" style="padding:12px 16px 4px" data-lang="en">Documentation</div>
-    <div class="label" style="padding:12px 16px 4px" data-lang="es">Documentaci&oacute;n</div>
-    <a href="#install" data-lang="en">Install</a>
-    <a href="#install" data-lang="es">Instalar</a>
-    <a href="#quickstart" data-lang="en">Quick Start</a>
-    <a href="#quickstart" data-lang="es">Inicio R&aacute;pido</a>
-    <a href="#desktop" data-lang="en">Desktop App</a>
-    <a href="#desktop" data-lang="es">App de Escritorio</a>
-    <a href="#architecture" data-lang="en">Architecture</a>
-    <a href="#architecture" data-lang="es">Arquitectura</a>
-    <a href="#diagrams" data-lang="en">Diagrams</a>
-    <a href="#diagrams" data-lang="es">Diagramas</a>
-    <a href="#roles" data-lang="en">4 Roles</a>
-    <a href="#roles" data-lang="es">4 Roles</a>
-    <a href="#flags" data-lang="en">CLI Flags</a>
-    <a href="#flags" data-lang="es">Flags CLI</a>
-    <a href="#modes" data-lang="en">Modes</a>
-    <a href="#modes" data-lang="es">Modos</a>
-    <a href="#providers" data-lang="en">Providers</a>
-    <a href="#providers" data-lang="es">Proveedores</a>
-    <a href="#terminal" data-lang="en">Terminal Adapters</a>
-    <a href="#terminal" data-lang="es">Adaptadores</a>
-    <a href="#config" data-lang="en">Configuration</a>
-    <a href="#config" data-lang="es">Configuraci&oacute;n</a>
-    <a href="#security" data-lang="en">Security</a>
-    <a href="#security" data-lang="es">Seguridad</a>
-    <a href="#vault" data-lang="en">Vault</a>
-    <a href="#vault" data-lang="es">Vault</a>
-  </div>
-  <div class="footer"><a href="https://github.com/UreckChan">@UreckChan</a></div>
-</div>
-<div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
-<button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+  <a class="hdr-gh" href="https://github.com/UreckChan/mimir-cli">GitHub ↗</a>
+</header>
 
-<div class="main" id="main">
-
-<!-- HERO -->
-<div class="hero">
-  <div style="position:absolute;top:0;right:20px;font-size:100px;color:var(--surface-high);font-family:Montserrat,sans-serif;font-weight:900;opacity:0.2;pointer-events:none">01</div>
-  <h2 data-lang="en">Mimir CLI</h2>
-  <h2 data-lang="es">Mimir CLI</h2>
-  <p data-lang="en">Autonomous coding agent with <strong class="text-primary">4 specialized roles</strong> that work in a loop. Auto-detects models you already have installed (Ollama, terminal CLIs) — no API key needed if you're already running Ollama locally. Otherwise <code>mimir --setup</code> walks you through it. Available as a <strong class="text-primary">terminal TUI</strong> and a <strong class="text-primary">desktop app</strong> (Tauri).</p>
-  <p data-lang="es">Agente aut&oacute;nomo de c&oacute;digo con <strong class="text-primary">4 roles especializados</strong> que trabajan en ciclo. Detecta autom&aacute;ticamente lo que ya tengas instalado (Ollama, CLIs de terminal) — sin API key si ya corres Ollama localmente. Si no, <code>mimir --setup</code> te gu&iacute;a paso a paso. Disponible como <strong class="text-primary">TUI de terminal</strong> y <strong class="text-primary">aplicaci&oacute;n de escritorio</strong> (Tauri).</p>
-  <div class="actions">
-    <a href="#install" class="btn btn-primary" data-lang="en">INSTALL</a>
-    <a href="#install" class="btn btn-primary" data-lang="es">INSTALAR</a>
-    <a href="https://github.com/UreckChan/mimir-cli" class="btn btn-outline" data-lang="en">VIEW SOURCE →</a>
-    <a href="https://github.com/UreckChan/mimir-cli" class="btn btn-outline" data-lang="es">VER CÓDIGO →</a>
+<nav class="sidebar" id="sidebar">
+  <div class="nav-group">
+    <div class="nav-head" data-i="es">Empezar</div><div class="nav-head" data-i="en">Get started</div>
+    <a href="#install"><span class="idx">01</span><span data-i="es">Instalar</span><span data-i="en">Install</span></a>
+    <a href="#desktop"><span class="idx">02</span><span data-i="es">App de escritorio</span><span data-i="en">Desktop app</span></a>
+    <a href="#updates"><span class="idx">03</span><span data-i="es">Auto-updates</span><span data-i="en">Auto-updates</span></a>
+    <a href="#quickstart"><span class="idx">04</span><span data-i="es">Inicio rápido</span><span data-i="en">Quick start</span></a>
   </div>
-  <div>
-    <span class="badge badge-green">PROTOCOL: v1.0.5</span>
-    <span class="badge badge-yellow">STATUS: STABLE</span>
+  <div class="nav-group">
+    <div class="nav-head" data-i="es">Cómo funciona</div><div class="nav-head" data-i="en">How it works</div>
+    <a href="#how"><span class="idx">05</span><span data-i="es">El ciclo</span><span data-i="en">The loop</span></a>
+    <a href="#roles"><span class="idx">06</span><span data-i="es">Los 4 roles</span><span data-i="en">The 4 roles</span></a>
+    <a href="#modes"><span class="idx">07</span><span data-i="es">Modos</span><span data-i="en">Modes</span></a>
   </div>
-</div>
+  <div class="nav-group">
+    <div class="nav-head" data-i="es">Referencia</div><div class="nav-head" data-i="en">Reference</div>
+    <a href="#flags"><span class="idx">08</span><span data-i="es">Flags CLI</span><span data-i="en">CLI flags</span></a>
+    <a href="#providers"><span class="idx">09</span><span data-i="es">Proveedores</span><span data-i="en">Providers</span></a>
+    <a href="#adapters"><span class="idx">10</span><span data-i="es">Adaptadores</span><span data-i="en">Adapters</span></a>
+    <a href="#config"><span class="idx">11</span><span data-i="es">Configuración</span><span data-i="en">Configuration</span></a>
+    <a href="#security"><span class="idx">12</span><span data-i="es">Seguridad</span><span data-i="en">Security</span></a>
+    <a href="#vault"><span class="idx">13</span><span data-i="es">Bóveda</span><span data-i="en">Vault</span></a>
+  </div>
+</nav>
+<div class="scrim" id="scrim" onclick="toggleNav()"></div>
 
-<!-- INSTALL -->
-<div class="section" id="install">
-  <h2 class="section-title"><span class="bar"></span> <span data-lang="en">Install</span><span data-lang="es">Instalaci&oacute;n</span></h2>
-  <div class="card">
-    <div class="card-header">
-      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--error);margin-right:4px"></span>
-      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--warning);margin-right:4px"></span>
-      <span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--primary);margin-right:8px"></span>
-      terminal
+<div class="main">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="glyph runes">ᛗ</div>
+    <div class="wrap">
+      <span class="eyebrow" data-i="es">El Necio · pozo del conocimiento</span>
+      <span class="eyebrow" data-i="en">The Blunt One · well of wisdom</span>
+      <h1><span data-i="es">Un agente que <span class="em">termina</span> el trabajo.</span><span data-i="en">An agent that <span class="em">finishes</span> the job.</span></h1>
+      <p class="tag" data-i="es">Cuatro roles —Arquitecto, Albañil, Inspector, Cronista— trabajan en ciclo <strong>PLAN → STEP → VERIFY → LEARN</strong> hasta que el código pasa. Corre en tu terminal o como app de escritorio. Multi-modelo, memoria persistente, y te dice la verdad sin rodeos.</p>
+      <p class="tag" data-i="en">Four roles —Architect, Builder, Inspector, Chronicler— work a <strong>PLAN → STEP → VERIFY → LEARN</strong> loop until the code passes. Runs in your terminal or as a desktop app. Multi-model, persistent memory, and blunt about what's wrong.</p>
+      <div class="cmd">
+        <div class="term">
+          <div class="term-bar"><span class="tb r"></span><span class="tb y"></span><span class="tb g"></span><span class="lbl">bash</span><button class="copy" data-copy="npm install -g mimir-cli">copy</button></div>
+          <div class="term-body"><span class="p">$</span> npm install -g mimir-cli</div>
+        </div>
+      </div>
+      <div class="actions">
+        <a href="#install" class="btn btn-gold"><span data-i="es">Instalar</span><span data-i="en">Install</span> ↓</a>
+        <a href="#desktop" class="btn btn-ghost"><span data-i="es">Descargar la app</span><span data-i="en">Download the app</span></a>
+      </div>
+      <div class="status">
+        <span class="chip"><span class="dot"></span><span data-i="es">v1.0.5 · estable</span><span data-i="en">v1.0.5 · stable</span></span>
+        <span class="chip"><span class="dot gold"></span><span data-i="es">auto-update firmado</span><span data-i="en">signed auto-update</span></span>
+        <span class="chip">MIT</span>
+      </div>
     </div>
-    <div class="terminal">
-      <span class="comment"># <span data-lang="en">Install globally via npm</span><span data-lang="es">Instala globalmente via npm</span></span><br>
-      npm install -g mimir-cli<br><br>
-      <span class="comment"># <span data-lang="en">Auto-detects installed models. Run 'mimir --setup' if you need an API key or free mode.</span><span data-lang="es">Detecta modelos instalados. Corre 'mimir --setup' si necesitas una API key o modo gratuito.</span></span>
+  </section>
+
+  <!-- INSTALL -->
+  <section class="section" id="install">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">01 · <span data-i="es">corre en tu terminal</span><span data-i="en">runs in your terminal</span></span>
+        <h2 data-i="es">Instalar la terminal (TUI)</h2><h2 data-i="en">Install the terminal (TUI)</h2>
+        <p class="lede" data-i="es">Mímir dentro de tu consola: escribes y respondes ahí mismo, sin ventanas. Lo más simple es por npm; también hay un binario portable por plataforma. <strong>¿Quieres la app con ventana? Salta a <a href="#desktop">App de escritorio</a>.</strong></p>
+        <p class="lede" data-i="en">Mímir inside your console: you type and it answers right there, no windows. Simplest via npm; there's also one portable binary per platform. <strong>Want the windowed app? Jump to <a href="#desktop">Desktop app</a>.</strong></p>
+      </div>
+
+      <div class="term" style="margin-bottom:22px">
+        <div class="term-bar"><span class="tb r"></span><span class="tb y"></span><span class="tb g"></span><span class="lbl">bash</span><button class="copy" data-copy="npm install -g mimir-cli">copy</button></div>
+        <div class="term-body"><span class="c"># <span data-i="es">instala global vía npm</span><span data-i="en">install globally via npm</span></span>
+<span class="p">$</span> npm install -g mimir-cli
+<span class="c"># <span data-i="es">detecta modelos ya instalados. Corre 'mimir --setup' si necesitas API key o modo gratis.</span><span data-i="en">auto-detects installed models. Run 'mimir --setup' if you need an API key or free mode.</span></span></div>
+      </div>
+
+      <div class="sec-head" style="margin-bottom:14px">
+        <h3 style="font-size:1.15rem" data-i="es">Binarios de terminal (TUI)</h3>
+        <h3 style="font-size:1.15rem" data-i="en">Terminal binaries (TUI)</h3>
+        <p class="lede" data-i="es">Ejecutables portables. Se corren directo, no se instalan en el sistema.</p>
+        <p class="lede" data-i="en">Portable executables. Run directly — they don't install into the system.</p>
+      </div>
+      <div class="grid g3" id="cli-downloads"></div>
+      <p class="note" data-i="es"><strong>macOS:</strong> estos binarios aún no están firmados con Apple Developer. Gatekeeper los bloquea — corre <code>xattr -d com.apple.quarantine mimir-macos-arm64</code> antes de ejecutar, o clic derecho → Abrir.</p>
+      <p class="note" data-i="en"><strong>macOS:</strong> these binaries aren't Apple-notarized yet. Gatekeeper blocks them — run <code>xattr -d com.apple.quarantine mimir-macos-arm64</code> first, or right-click → Open.</p>
     </div>
-  </div>
-  <div class="card mt-4">
-    <h3 style="font-size:18px;font-weight:800;text-transform:uppercase;color:var(--primary);margin-bottom:12px" data-lang="en">Direct Downloads</h3>
-    <h3 style="font-size:18px;font-weight:800;text-transform:uppercase;color:var(--primary);margin-bottom:12px" data-lang="es">Descargas Directas</h3>
-    <p class="text-secondary" style="font-size:12px;margin-bottom:16px" data-lang="en">Binaries for each platform. Download and run directly.</p>
-    <p class="text-secondary" style="font-size:12px;margin-bottom:16px" data-lang="es">Binarios para cada plataforma. Descarga y ejecuta directamente.</p>
-    <div class="grid-3">
-      <a href="https://github.com/UreckChan/mimir-cli/releases/download/v1.0.5/mimir-macos-arm64" class="grid-item" style="text-decoration:none">
-        <div class="label">macOS</div>
-        <div style="font-size:12px;color:var(--primary);margin-top:4px">mimir-macos-arm64</div>
-        <div class="text-muted" style="font-size:10px;margin-top:4px">Apple Silicon · 65 MB</div>
-      </a>
-      <a href="https://github.com/UreckChan/mimir-cli/releases/download/v1.0.5/mimir-linux-x64" class="grid-item" style="text-decoration:none">
-        <div class="label">Linux</div>
-        <div style="font-size:12px;color:var(--primary);margin-top:4px">mimir-linux-x64</div>
-        <div class="text-muted" style="font-size:10px;margin-top:4px">x86_64 · 94 MB</div>
-      </a>
-      <a href="https://github.com/UreckChan/mimir-cli/releases/download/v1.0.5/mimir-windows-x64.exe" class="grid-item" style="text-decoration:none">
-        <div class="label">Windows</div>
-        <div style="font-size:12px;color:var(--primary);margin-top:4px">mimir-windows-x64.exe</div>
-        <div class="text-muted" style="font-size:10px;margin-top:4px">x64 · 98 MB</div>
-      </a>
+  </section>
+
+  <!-- DESKTOP -->
+  <section class="section" id="desktop">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">02 · <span data-i="es">app con ventana propia</span><span data-i="en">its own window</span></span>
+        <h2 data-i="es">App de escritorio</h2><h2 data-i="en">Desktop app</h2>
+        <p class="lede" data-i="es"><strong>El mismo motor, con interfaz gráfica</strong> (Tauri v2 + React) — no es la terminal: se instala como cualquier app y abre su ventana. Chat con markdown, panel del ciclo en vivo, selector de modelo en caliente, gráficas de tokens y costo, botón PÁRAME, y ajustes visuales de API keys y priority list.</p>
+        <p class="lede" data-i="en"><strong>Same engine, with a graphical interface</strong> (Tauri v2 + React) — not the terminal: it installs like any app and opens its own window. Markdown chat, live loop panel, hot model switching, token/cost charts, a STOP button, and visual settings for API keys and the priority list.</p>
+      </div>
+      <div class="grid g3" id="desktop-downloads"></div>
+      <p class="note" data-i="es"><strong>macOS:</strong> misma nota de Gatekeeper que arriba — sin firma de Apple por ahora, clic derecho → Abrir. <strong>Linux:</strong> instala el <code>.deb</code> con <code>sudo dpkg -i</code> o el <code>.rpm</code> según tu distro.</p>
+      <p class="note" data-i="en"><strong>macOS:</strong> same Gatekeeper note as above — no Apple signature yet, right-click → Open. <strong>Linux:</strong> install the <code>.deb</code> with <code>sudo dpkg -i</code>, or the <code>.rpm</code> for your distro.</p>
     </div>
-    <p class="text-secondary" style="font-size:11px;margin-top:12px" data-lang="en">macOS: these binaries aren't code-signed yet (no Apple Developer license). Gatekeeper will block them — run <code>xattr -d com.apple.quarantine mimir-macos-arm64</code> before executing, or right-click → Open.</p>
-    <p class="text-secondary" style="font-size:11px;margin-top:12px" data-lang="es">macOS: estos binarios todavía no est&aacute;n firmados (sin licencia de Apple Developer). Gatekeeper los bloquea &mdash; corre <code>xattr -d com.apple.quarantine mimir-macos-arm64</code> antes de ejecutar, o clic derecho &rarr; Abrir.</p>
-  </div>
-</div>
+  </section>
 
-<!-- QUICK START -->
-<div class="section" id="quickstart">
-  <h2 class="section-title"><span class="bar"></span> <span data-lang="en">Quick Start</span><span data-lang="es">Inicio R&aacute;pido</span></h2>
-  <div class="card"><div class="label" data-lang="en">Chat mode</div><div class="label" data-lang="es">Modo chat</div><div class="terminal mt-2">mimir --goal "Hello! What can you do?"</div></div>
-  <div class="card"><div class="label" data-lang="en">Project mode (full 4-role loop)</div><div class="label" data-lang="es">Modo proyecto (ciclo completo)</div><div class="terminal mt-2">mimir --goal "Create a CLI tool" --cwd /my/project</div></div>
-  <div class="card"><div class="label" data-lang="en">Sidecar mode</div><div class="label" data-lang="es">Modo sidecar</div><div class="terminal mt-2">mimir --serve</div></div>
-</div>
+  <!-- AUTO-UPDATES -->
+  <section class="section" id="updates">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">03</span>
+        <h2 data-i="es">Auto-updates firmados</h2><h2 data-i="en">Signed auto-updates</h2>
+        <p class="lede" data-i="es">La app de escritorio revisa un manifiesto firmado al arrancar. Si hay una versión más nueva, la descarga y la instala sola. Cada instalador va firmado con una clave incrustada en la app — un build alterado no se instala.</p>
+        <p class="lede" data-i="en">The desktop app checks a signed manifest on launch. If a newer version exists, it downloads and installs it. Every installer is signed with a key baked into the app — a tampered build won't install.</p>
+      </div>
 
-<!-- DESKTOP -->
-<div class="section" id="desktop">
-  <h2 class="section-title"><span class="bar"></span> <span data-lang="en">Desktop App</span><span data-lang="es">App de Escritorio</span></h2>
-  <div class="card">
-    <p class="text-secondary" style="font-size:12px;margin-bottom:16px;line-height:1.6" data-lang="en">Same engine, graphical interface: Tauri v2 + React. Rendered-markdown chat, live loop panel, hot model switcher, token/cost charts, PANIC button and visual settings for API keys and priority list.</p>
-    <p class="text-secondary" style="font-size:12px;margin-bottom:16px;line-height:1.6" data-lang="es">El mismo motor con interfaz gr&aacute;fica: Tauri v2 + React. Chat con markdown renderizado, panel del loop en vivo, selector de modelo en caliente, gr&aacute;ficas de tokens/costo, bot&oacute;n P&Aacute;RAME y configuraci&oacute;n visual de API keys y priority list.</p>
-    <div class="grid-3">
-      <a href="https://github.com/UreckChan/mimir-cli/releases/download/v1.0.5/Mimir_1.0.5_aarch64.dmg" class="grid-item" style="text-decoration:none">
-        <div class="label">macOS</div>
-        <div style="font-size:12px;color:var(--primary);margin-top:4px">Mimir_1.0.5_aarch64.dmg</div>
-        <div class="text-muted" style="font-size:10px;margin-top:4px">Apple Silicon · .dmg</div>
-      </a>
-      <a href="https://github.com/UreckChan/mimir-cli/releases/download/v1.0.5/Mimir_1.0.5_amd64.deb" class="grid-item" style="text-decoration:none">
-        <div class="label">Linux</div>
-        <div style="font-size:12px;color:var(--primary);margin-top:4px">.deb &middot; .rpm</div>
-        <div class="text-muted" style="font-size:10px;margin-top:4px">x86_64 · <a href="https://github.com/UreckChan/mimir-cli/releases/download/v1.0.5/Mimir-1.0.5-1.x86_64.rpm">rpm aqu&iacute;</a></div>
-      </a>
-      <a href="https://github.com/UreckChan/mimir-cli/releases/download/v1.0.5/Mimir_1.0.5_x64_en-US.msi" class="grid-item" style="text-decoration:none">
-        <div class="label">Windows</div>
-        <div style="font-size:12px;color:var(--primary);margin-top:4px">Mimir_1.0.5_x64_en-US.msi</div>
-        <div class="text-muted" style="font-size:10px;margin-top:4px">x64 · <a href="https://github.com/UreckChan/mimir-cli/releases/download/v1.0.5/Mimir_1.0.5_x64-setup.exe">setup.exe aqu&iacute;</a></div>
-      </a>
+      <div class="callout" style="margin-bottom:18px">
+        <span class="ic">ᛥ</span>
+        <div>
+          <p data-i="es"><strong>Verificado de punta a punta el 2026-07-23.</strong> Se descargó el <code>.dmg</code> y el <code>.msi</code> reales del release público, se extrajo la firma del <code>updater.json</code> y se validó contra la clave pública incrustada en la app. Una instalación vieja (1.0.0–1.0.4) detecta la 1.0.5 y se actualiza sola.</p>
+          <p data-i="en"><strong>Verified end-to-end on 2026-07-23.</strong> The real <code>.dmg</code> and <code>.msi</code> were pulled from the public release, the signature was extracted from <code>updater.json</code> and validated against the public key baked into the app. An old install (1.0.0–1.0.4) detects 1.0.5 and updates itself.</p>
+        </div>
+      </div>
+
+      <div class="term">
+        <div class="term-bar"><span class="tb r"></span><span class="tb y"></span><span class="tb g"></span><span class="lbl">minisign — signature check</span></div>
+        <div class="term-body"><span class="p">$</span> minisign -Vm Mimir_1.0.5_aarch64.dmg   <span class="c"># macOS</span>
+<span class="ok">Signature and comment signature verified</span>
+Trusted comment: file:Mímir_1.0.5_aarch64.dmg
+
+<span class="p">$</span> minisign -Vm Mimir_1.0.5_x64_en-US.msi   <span class="c"># Windows</span>
+<span class="ok">Signature and comment signature verified</span>
+Trusted comment: file:Mímir_1.0.5_x64_en-US.msi</div>
+      </div>
+
+      <div class="grid g3" style="margin-top:16px">
+        <div class="tile"><div class="k">macOS · Windows</div><div class="v" data-i="es">Auto-update ✓</div><div class="v" data-i="en">Auto-update ✓</div><p data-i="es">Detecta, descarga e instala solo.</p><p data-i="en">Detects, downloads and installs on its own.</p></div>
+        <div class="tile"><div class="k">Linux</div><div class="v" data-i="es">Manual</div><div class="v" data-i="en">Manual</div><p data-i="es">.deb/.rpm sin auto-update (sin AppImage — límite de linuxdeploy con el sidecar de Bun). Bajas la nueva versión a mano.</p><p data-i="en">.deb/.rpm without auto-update (no AppImage — linuxdeploy limitation with the Bun sidecar). Grab new versions manually.</p></div>
+        <div class="tile"><div class="k">TUI</div><div class="v" data-i="es">npm update</div><div class="v" data-i="en">npm update</div><p data-i="es">La terminal se actualiza con <code>npm update -g mimir-cli</code> o bajando el binario nuevo.</p><p data-i="en">The terminal build updates via <code>npm update -g mimir-cli</code> or a fresh binary.</p></div>
+      </div>
     </div>
-    <p class="text-secondary" style="font-size:11px;margin-top:12px" data-lang="en">macOS: same Gatekeeper note as the CLI binaries — unsigned for now, right-click &rarr; Open.</p>
-    <p class="text-secondary" style="font-size:11px;margin-top:12px" data-lang="es">macOS: aplica la misma nota de Gatekeeper que los binarios CLI &mdash; sin firma por ahora, clic derecho &rarr; Abrir.</p>
-  </div>
+  </section>
+
+  <!-- QUICK START -->
+  <section class="section" id="quickstart">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">04</span>
+        <h2 data-i="es">Inicio rápido</h2><h2 data-i="en">Quick start</h2>
+      </div>
+      <div class="grid g3">
+        <div class="term"><div class="term-bar"><span class="tb r"></span><span class="tb y"></span><span class="tb g"></span><span class="lbl" data-i="es">modo chat</span><span class="lbl" data-i="en">chat mode</span></div><div class="term-body"><span class="p">$</span> mimir --goal <span class="c">"¿qué puedes hacer?"</span></div></div>
+        <div class="term"><div class="term-bar"><span class="tb r"></span><span class="tb y"></span><span class="tb g"></span><span class="lbl" data-i="es">proyecto (ciclo)</span><span class="lbl" data-i="en">project (loop)</span></div><div class="term-body"><span class="p">$</span> mimir --goal <span class="c">"crea un CLI"</span> --cwd .</div></div>
+        <div class="term"><div class="term-bar"><span class="tb r"></span><span class="tb y"></span><span class="tb g"></span><span class="lbl" data-i="es">sidecar</span><span class="lbl" data-i="en">sidecar</span></div><div class="term-body"><span class="p">$</span> mimir --serve</div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HOW / LOOP -->
+  <section class="section" id="how">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">05</span>
+        <h2 data-i="es">El ciclo</h2><h2 data-i="en">The loop</h2>
+        <p class="lede" data-i="es">Cada meta corre en un worktree de git aislado. Los roles se turnan; el Inspector es adversarial de verdad y corre con otro modelo. Nada se fusiona a tu rama hasta que aprueba.</p>
+        <p class="lede" data-i="en">Each goal runs in an isolated git worktree. Roles take turns; the Inspector is genuinely adversarial and runs on a different model. Nothing merges to your branch until it approves.</p>
+      </div>
+      <div class="grid g2">
+        <div class="card">
+          <div class="eyebrow" style="color:var(--muted)" data-i="es">Ciclo autónomo</div>
+          <div class="eyebrow" style="color:var(--muted)" data-i="en">Autonomous loop</div>
+          <img class="diagram" src="./diagrams/diagram-1-dark.svg" alt="PLAN STEP VERIFY LEARN" loading="lazy">
+        </div>
+        <div class="card">
+          <div class="eyebrow" style="color:var(--muted)" data-i="es">Arquitectura de paquetes</div>
+          <div class="eyebrow" style="color:var(--muted)" data-i="en">Package architecture</div>
+          <img class="diagram" src="./diagrams/diagram-2-dark.svg" alt="Arquitectura de paquetes" loading="lazy">
+        </div>
+      </div>
+      <div class="term" style="margin-top:16px">
+        <div class="term-bar"><span class="tb r"></span><span class="tb y"></span><span class="tb g"></span><span class="lbl" data-i="es">flujo de un vistazo</span><span class="lbl" data-i="en">flow at a glance</span></div>
+        <div class="term-body">      <span class="p">Mímir</span>
+        │
+   ┌────┴────┬─────────┐
+   ▼         ▼         ▼
+<span class="p">Arquitecto</span>  <span class="p">Albañil</span>   <span class="p">Inspector</span>
+   └────┬────┴─────────┘
+        ▼
+  <span class="p">ModelRouter</span>  <span class="c"># enruta al modelo más barato capaz</span>
+        │
+   ┌────┴────┬─────────┐
+   ▼         ▼         ▼
+ <span class="ok">Free</span>      <span class="ok">Ollama</span>     Cloud</div>
+      </div>
+      <p class="note">
+        <span data-i="es">Documentación completa: <a href="https://github.com/UreckChan/mimir-cli/blob/main/docs/MIMIR.md">MIMIR.md</a> · <a href="https://github.com/UreckChan/mimir-cli/blob/main/docs/MIMIR-generated.md">MIMIR-generated.md</a> (generada desde el código).</span>
+        <span data-i="en">Full docs: <a href="https://github.com/UreckChan/mimir-cli/blob/main/docs/MIMIR.md">MIMIR.md</a> · <a href="https://github.com/UreckChan/mimir-cli/blob/main/docs/MIMIR-generated.md">MIMIR-generated.md</a> (generated from source).</span>
+      </p>
+    </div>
+  </section>
+
+  <!-- ROLES -->
+  <section class="section" id="roles">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">06</span>
+        <h2 data-i="es">Los 4 roles</h2><h2 data-i="en">The 4 roles</h2>
+        <p class="lede" data-i="es">Cada rol corre con el modelo más barato capaz de su trabajo — planear y revisar con uno caro, ejecutar con uno barato, resumir gratis.</p>
+        <p class="lede" data-i="en">Each role runs on the cheapest model that can do its job — plan and review on a top model, execute on a cheap one, summarize for free.</p>
+      </div>
+      <div class="grid g4">
+        <div class="role arch"><span class="rune">ᚨ</span><div class="step" data-i="es">Fase · PLAN</div><div class="step" data-i="en">Phase · PLAN</div><h3 data-i="es">Arquitecto</h3><h3 data-i="en">Architect</h3><p data-i="es">Explora el código y desglosa la meta en un checklist.</p><p data-i="en">Explores the code and breaks the goal into a checklist.</p></div>
+        <div class="role"><span class="rune">ᛒ</span><div class="step" data-i="es">Fase · STEP</div><div class="step" data-i="en">Phase · STEP</div><h3 data-i="es">Albañil</h3><h3 data-i="en">Builder</h3><p data-i="es">Escribe código, corre comandos, instala deps — un paso a la vez.</p><p data-i="en">Writes code, runs commands, installs deps — one step at a time.</p></div>
+        <div class="role insp"><span class="rune">ᛁ</span><div class="step" data-i="es">Fase · VERIFY</div><div class="step" data-i="en">Phase · VERIFY</div><h3 data-i="es">Inspector</h3><h3 data-i="en">Inspector</h3><p data-i="es">Corre tests y build, lee el diff, aprueba o rechaza con razón.</p><p data-i="en">Runs tests and build, reads the diff, approves or rejects with a reason.</p></div>
+        <div class="role"><span class="rune">ᚲ</span><div class="step" data-i="es">Fase · LEARN</div><div class="step" data-i="en">Phase · LEARN</div><h3 data-i="es">Cronista</h3><h3 data-i="en">Chronicler</h3><p data-i="es">Guarda la lección en la bóveda para la próxima vez.</p><p data-i="en">Saves the lesson to the vault for next time.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- MODES -->
+  <section class="section" id="modes">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">07</span>
+        <h2 data-i="es">Modos</h2><h2 data-i="en">Modes</h2>
+      </div>
+      <div class="grid g3">
+        <div class="tile"><div class="k" style="color:var(--arch)">CHAT</div><p data-i="es">Respuesta directa. Sin herramientas, sin ciclo.</p><p data-i="en">Direct answer. No tools, no loop.</p></div>
+        <div class="tile"><div class="k" style="color:var(--warn)">PLAN</div><p data-i="es">Ciclo completo con plan detallado del Arquitecto.</p><p data-i="en">Full loop with a detailed Architect plan.</p></div>
+        <div class="tile"><div class="k" style="color:var(--insp)">BUILD</div><p data-i="es">Optimizado para codificar. Menos plan, más ejecución.</p><p data-i="en">Optimized for coding. Less planning, more execution.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FLAGS -->
+  <section class="section" id="flags">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">08</span>
+        <h2 data-i="es">Flags CLI</h2><h2 data-i="en">CLI flags</h2>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>Flag</th><th data-i="es">Qué hace</th><th data-i="en">What it does</th><th>Default</th></tr></thead>
+          <tbody>
+            <tr><td class="k">--goal</td><td data-i="es">Tu objetivo</td><td data-i="en">Your objective</td><td class="mono">—</td></tr>
+            <tr><td class="k">--cwd</td><td data-i="es">Directorio de trabajo</td><td data-i="en">Working directory</td><td class="mono" data-i="es">actual</td><td class="mono" data-i="en">current</td></tr>
+            <tr><td class="k">--budget</td><td data-i="es">Presupuesto máximo en USD</td><td data-i="en">Max budget in USD</td><td class="mono" data-i="es">ilimitado</td><td class="mono" data-i="en">unlimited</td></tr>
+            <tr><td class="k">--night</td><td data-i="es">Cola de metas nocturna</td><td data-i="en">Overnight goal queue</td><td class="mono">false</td></tr>
+            <tr><td class="k">--no-sandbox</td><td data-i="es">Sin aislamiento de git worktree</td><td data-i="en">Skip git worktree isolation</td><td class="mono">false</td></tr>
+            <tr><td class="k">--serve</td><td data-i="es">Modo sidecar WebSocket</td><td data-i="en">WebSocket sidecar mode</td><td class="mono">false</td></tr>
+            <tr><td class="k">--port</td><td data-i="es">Puerto del sidecar</td><td data-i="en">Sidecar port</td><td class="mono">4317</td></tr>
+            <tr><td class="k">--setup</td><td data-i="es">Asistente de configuración</td><td data-i="en">Setup wizard</td><td class="mono">—</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- PROVIDERS -->
+  <section class="section" id="providers">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">09</span>
+        <h2 data-i="es">Proveedores</h2><h2 data-i="en">Providers</h2>
+        <p class="lede" data-i="es">Ocho proveedores con failover automático. Si uno falla (rate limit, sin key, cuota), pasa al siguiente sin detener el trabajo.</p>
+        <p class="lede" data-i="en">Eight providers with automatic failover. If one fails (rate limit, no key, quota), it moves to the next without stopping.</p>
+      </div>
+      <div class="grid g4" id="providers-grid"></div>
+    </div>
+  </section>
+
+  <!-- ADAPTERS -->
+  <section class="section" id="adapters">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">10</span>
+        <h2 data-i="es">Adaptadores de terminal</h2><h2 data-i="en">Terminal adapters</h2>
+        <p class="lede" data-i="es">Mímir puede ejecutar comandos a través de otras CLIs además de bash — usa la que ya tengas instalada.</p>
+        <p class="lede" data-i="en">Mímir can run commands through other CLIs besides bash — it uses whatever you already have installed.</p>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th data-i="es">Terminal</th><th data-i="en">Terminal</th><th data-i="es">Instalación</th><th data-i="en">Install</th><th data-i="es">Suscripción</th><th data-i="en">Subscription</th></tr></thead>
+          <tbody>
+            <tr><td class="k">Bash</td><td data-i="es">Integrado</td><td data-i="en">Built-in</td><td data-i="es">No</td><td data-i="en">No</td></tr>
+            <tr><td class="k">Claude Code</td><td class="mono">npm i -g @anthropic-ai/claude-code</td><td data-i="es">Claude</td><td data-i="en">Claude</td></tr>
+            <tr><td class="k">Codex CLI</td><td class="mono">npm i -g @openai/codex</td><td data-i="es">OpenAI</td><td data-i="en">OpenAI</td></tr>
+            <tr><td class="k">OpenCode</td><td class="mono">npm i -g opencode</td><td data-i="es">No</td><td data-i="en">No</td></tr>
+            <tr><td class="k">Aider</td><td class="mono">pip install aider-chat</td><td data-i="es">No</td><td data-i="en">No</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONFIG -->
+  <section class="section" id="config">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">11</span>
+        <h2 data-i="es">Configuración</h2><h2 data-i="en">Configuration</h2>
+      </div>
+      <div class="grid g2">
+        <div class="card pad-lg">
+          <h3 style="font-size:1.05rem;margin-bottom:6px">API Keys</h3>
+          <p style="font-size:13.5px;color:var(--parch-2);margin-bottom:14px" data-i="es">Variables de entorno o el panel de Ajustes. Las keys se guardan en el keychain del sistema.</p>
+          <p style="font-size:13.5px;color:var(--parch-2);margin-bottom:14px" data-i="en">Env vars or the Settings panel. Keys are stored in the system keychain.</p>
+          <div class="term"><div class="term-body"><span class="p">export</span> ANTHROPIC_API_KEY=sk-…
+<span class="p">export</span> OPENAI_API_KEY=sk-…
+<span class="p">export</span> DEEPSEEK_API_KEY=sk-…</div></div>
+        </div>
+        <div class="card pad-lg">
+          <h3 style="font-size:1.05rem;margin-bottom:6px" data-i="es">Priority List</h3><h3 style="font-size:1.05rem;margin-bottom:6px" data-i="en">Priority list</h3>
+          <p style="font-size:13.5px;color:var(--parch-2);margin-bottom:14px" data-i="es">Modelos en orden. Failover automático al siguiente si uno falla.</p>
+          <p style="font-size:13.5px;color:var(--parch-2);margin-bottom:14px" data-i="en">Models in order. Automatic failover to the next on failure.</p>
+          <div class="term"><div class="term-body">1 anthropic/claude-sonnet-5   <span class="c"># cloud · API key</span>
+2 deepseek/deepseek-v4-flash  <span class="c"># cloud · tu key</span>
+3 ollama/llama3.2:3b          <span class="c"># local · gratis</span></div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECURITY -->
+  <section class="section" id="security">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">12</span>
+        <h2 data-i="es">Seguridad</h2><h2 data-i="en">Security</h2>
+      </div>
+      <div class="grid g3">
+        <div class="tile"><div class="k" data-i="es">Redacción de secretos</div><div class="k" data-i="en">Secret redaction</div><p data-i="es">Las API keys se censuran de logs y salidas de herramientas antes de llegar al modelo.</p><p data-i="en">API keys are censored from logs and tool output before reaching the model.</p></div>
+        <div class="tile"><div class="k" data-i="es">3 niveles de permiso</div><div class="k" data-i="en">3 permission levels</div><p data-i="es">Paranoico / normal / yolo. Comandos destructivos pasan por confirmación humana.</p><p data-i="en">Paranoid / normal / yolo. Destructive commands require human confirmation.</p></div>
+        <div class="tile"><div class="k" data-i="es">Rollback por worktree</div><div class="k" data-i="en">Worktree rollback</div><p data-i="es">Cada meta en su worktree de git; snapshot y revert por paso.</p><p data-i="en">Each goal in its own git worktree; snapshot and revert per step.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- VAULT -->
+  <section class="section" id="vault">
+    <div class="wrap">
+      <div class="sec-head">
+        <span class="eyebrow">13</span>
+        <h2 data-i="es">Bóveda de memoria</h2><h2 data-i="en">Memory vault</h2>
+        <p class="lede" data-i="es">Cada lección se guarda en una bóveda local con búsqueda FTS5. Las soluciones pasadas se recuerdan solas cuando aparece una tarea parecida — y si repites un error ya documentado, te lo restriega con fecha.</p>
+        <p class="lede" data-i="en">Every lesson is saved to a local vault with FTS5 search. Past solutions surface on their own when a similar task appears — and if you repeat a documented mistake, it calls it out with a date.</p>
+      </div>
+      <div class="grid g3">
+        <div class="tile"><div class="k">LESSON</div><div class="v" data-i="es">Los proxies de auth necesitan middleware</div><div class="v" data-i="en">Auth proxies need middleware</div></div>
+        <div class="tile"><div class="k">PLAYBOOK</div><div class="v" data-i="es">Desplegar infraestructura de proxy</div><div class="v" data-i="en">Deploy proxy infrastructure</div></div>
+        <div class="tile"><div class="k">SESSION</div><div class="v" data-i="es">Arreglar latencia de cold start</div><div class="v" data-i="en">Fix cold-start latency</div></div>
+      </div>
+    </div>
+  </section>
+
 </div>
 
-<!-- ARCHITECTURE -->
-<div class="section" id="architecture">
-  <h2 class="section-title"><span class="bar"></span> Architecture</h2>
-  <div class="card">
-    <p class="text-secondary" style="font-size:13px;line-height:1.6;margin-bottom:20px">Mimir runs on: <strong class="text-primary">PLAN → STEP → VERIFY → LEARN</strong>.</p>
-    <div class="terminal" style="white-space:pre;line-height:1.5">+----------------------+
-|       Mimir          |
-+----------+-----------+
-     |
-     +-------+-------+
-     v       v       v
-+-------+ +-----+ +-------+
-|Arch   | |Build| |Insp   |
-+---+---+ +--+--+ +---+---+
-    |        |        |
-    +--------+--------+
-             v
-      +-----------+
-      |ModelRouter|
-      +-----+-----+
-            |
-     +------+------+
-     v      v      v
- +------+ +----+ +-----+
- |Free  | |Oll | |Cloud |
- +------+ +----+ +-----+</div>
-  </div>
-</div>
-
-<!-- DIAGRAMS -->
-<div class="section" id="diagrams">
-  <h2 class="section-title"><span class="bar"></span> <span data-lang="en">Diagrams</span><span data-lang="es">Diagramas</span></h2>
-  <div class="card">
-    <div class="label" data-lang="en">Autonomous loop (PLAN &rarr; STEP &rarr; VERIFY &rarr; LEARN)</div>
-    <div class="label" data-lang="es">Loop aut&oacute;nomo (PLAN &rarr; STEP &rarr; VERIFY &rarr; LEARN)</div>
-    <img src="./diagrams/diagram-1-dark.svg" alt="Loop autonomo de Mimir" style="width:100%;margin-top:12px" loading="lazy">
-  </div>
-  <div class="card">
-    <div class="label" data-lang="en">Package architecture</div>
-    <div class="label" data-lang="es">Arquitectura de paquetes</div>
-    <img src="./diagrams/diagram-2-dark.svg" alt="Arquitectura de paquetes de Mimir" style="width:100%;margin-top:12px" loading="lazy">
-  </div>
-  <p class="text-secondary" style="font-size:11px;margin-top:8px">
-    <span data-lang="en">Full documentation: <a href="https://github.com/UreckChan/mimir-cli/blob/main/docs/MIMIR.md">MIMIR.md</a> &middot; <a href="https://github.com/UreckChan/mimir-cli/blob/main/docs/MIMIR-generated.md">MIMIR-generated.md</a> (generated from source)</span>
-    <span data-lang="es">Documentaci&oacute;n completa: <a href="https://github.com/UreckChan/mimir-cli/blob/main/docs/MIMIR.md">MIMIR.md</a> &middot; <a href="https://github.com/UreckChan/mimir-cli/blob/main/docs/MIMIR-generated.md">MIMIR-generated.md</a> (generado desde el c&oacute;digo)</span>
-  </p>
-</div>
-
-<!-- ROLES -->
-<div class="section" id="roles">
-  <h2 class="section-title"><span class="bar"></span> <span data-lang="en">The 4 Roles</span><span data-lang="es">Los 4 Roles</span></h2>
-  <div class="grid-4">
-    <div class="grid-item"><div class="label">ROLE_01</div><h3 style="font-size:18px;font-weight:800;text-transform:uppercase;color:var(--arch);margin-top:8px">Architect</h3><p class="text-secondary" style="font-size:11px;margin-top:8px" data-lang="en">Plans strategy. Breaks down goals into steps.</p><p class="text-secondary" style="font-size:11px;margin-top:8px" data-lang="es">Planea la estrategia. Desglosa objetivos en pasos.</p></div>
-    <div class="grid-item"><div class="label">ROLE_02</div><h3 style="font-size:18px;font-weight:800;text-transform:uppercase;color:var(--arch);margin-top:8px">Builder</h3><p class="text-secondary" style="font-size:11px;margin-top:8px" data-lang="en">Writes code, runs commands, installs deps.</p><p class="text-secondary" style="font-size:11px;margin-top:8px" data-lang="es">Escribe c&oacute;digo, ejecuta comandos.</p></div>
-    <div class="grid-item"><div class="label">ROLE_03</div><h3 style="font-size:18px;font-weight:800;text-transform:uppercase;color:var(--insp);margin-top:8px">Inspector</h3><p class="text-secondary" style="font-size:11px;margin-top:8px" data-lang="en">Verifies quality. Runs tests, checks code.</p><p class="text-secondary" style="font-size:11px;margin-top:8px" data-lang="es">Verifica calidad. Ejecuta tests.</p></div>
-    <div class="grid-item"><div class="label">ROLE_04</div><h3 style="font-size:18px;font-weight:800;text-transform:uppercase;color:var(--text-secondary);margin-top:8px">Chronicler</h3><p class="text-secondary" style="font-size:11px;margin-top:8px" data-lang="en">Documents lessons. Generates playbooks.</p><p class="text-secondary" style="font-size:11px;margin-top:8px" data-lang="es">Documenta lecciones. Genera playbooks.</p></div>
-  </div>
-</div>
-
-<!-- FLAGS -->
-<div class="section" id="flags">
-  <h2 class="section-title"><span class="bar"></span> <span data-lang="en">CLI Flags</span><span data-lang="es">Flags CLI</span></h2>
-  <table>
-    <tr><th>Flag</th><th data-lang="en">Description</th><th data-lang="es">Descripci&oacute;n</th><th>Default</th></tr>
-    <tr><td class="text-primary">--goal</td><td colspan="2" data-lang="en">Your objective</td><td data-lang="es">Tu objetivo</td><td>-</td></tr>
-    <tr><td class="text-primary">--cwd</td><td colspan="2" data-lang="en">Working directory</td><td data-lang="es">Directorio de trabajo</td><td>current dir</td></tr>
-    <tr><td class="text-primary">--budget</td><td colspan="2" data-lang="en">Max budget in USD</td><td data-lang="es">Presupuesto m&aacute;ximo USD</td><td>unlimited</td></tr>
-    <tr><td class="text-primary">--night</td><td colspan="2" data-lang="en">Queue mode for overnight</td><td data-lang="es">Cola de metas nocturna</td><td>false</td></tr>
-    <tr><td class="text-primary">--no-sandbox</td><td colspan="2" data-lang="en">Skip git worktree isolation</td><td data-lang="es">Sin aislamiento git</td><td>false</td></tr>
-    <tr><td class="text-primary">--serve</td><td colspan="2" data-lang="en">WebSocket sidecar mode</td><td data-lang="es">Modo sidecar WebSocket</td><td>false</td></tr>
-    <tr><td class="text-primary">--port</td><td colspan="2" data-lang="en">Sidecar port</td><td data-lang="es">Puerto del sidecar</td><td>4317</td></tr>
-    <tr><td class="text-primary">--setup</td><td colspan="2" data-lang="en">Setup wizard</td><td data-lang="es">Asistente de configuraci&oacute;n</td><td>-</td></tr>
-  </table>
-</div>
-
-<!-- MODES -->
-<div class="section" id="modes">
-  <h2 class="section-title"><span class="bar"></span> Modes</h2>
-  <div class="grid-3">
-    <div class="grid-item"><span class="label">CHAT</span><p class="text-secondary" style="font-size:11px;margin-top:8px" data-lang="en">Direct response. No tools, no loop.</p><p class="text-secondary" style="font-size:11px;margin-top:8px" data-lang="es">Respuesta directa. Sin herramientas.</p></div>
-    <div class="grid-item"><span class="label" style="color:var(--warning)">PLAN</span><p class="text-secondary" style="font-size:11px;margin-top:8px" data-lang="en">Full loop with detailed planning.</p><p class="text-secondary" style="font-size:11px;margin-top:8px" data-lang="es">Ciclo completo con plan detallado.</p></div>
-    <div class="grid-item"><span class="label" style="color:var(--insp)">BUILD</span><p class="text-secondary" style="font-size:11px;margin-top:8px" data-lang="en">Optimized for coding. Fast execution.</p><p class="text-secondary" style="font-size:11px;margin-top:8px" data-lang="es">Optimizado para codificar.</p></div>
-  </div>
-</div>
-
-<!-- PROVIDERS -->
-<div class="section" id="providers">
-  <h2 class="section-title"><span class="bar"></span> <span data-lang="en">Supported Providers</span><span data-lang="es">Proveedores Soportados</span></h2>
-  <div class="grid-4" id="providers-grid"></div>
-</div>
-
-<!-- TERMINAL -->
-<div class="section" id="terminal">
-  <h2 class="section-title"><span class="bar"></span> <span data-lang="en">Terminal Adapters</span><span data-lang="es">Adaptadores de Terminal</span></h2>
-  <table>
-    <tr><th>Terminal</th><th data-lang="en">Install</th><th data-lang="es">Instalaci&oacute;n</th><th data-lang="en">Subscription</th><th data-lang="es">Suscripci&oacute;n</th><th>Default</th></tr>
-    <tr><td class="text-primary">Bash</td><td data-lang="en">Built-in</td><td data-lang="es">Integrado</td><td data-lang="en">No</td><td data-lang="es">No</td><td class="text-primary">✓</td></tr>
-    <tr><td class="text-primary">Claude Code</td><td colspan="2">npm i -g @anthropic-ai/claude-code</td><td data-lang="en">Claude sub</td><td data-lang="es">Suscripci&oacute;n Claude</td><td>-</td></tr>
-    <tr><td class="text-primary">Codex CLI</td><td colspan="2">npm i -g @openai/codex</td><td data-lang="en">OpenAI sub</td><td data-lang="es">Suscripci&oacute;n OpenAI</td><td>-</td></tr>
-    <tr><td class="text-primary">OpenCode</td><td colspan="2">npm i -g opencode</td><td data-lang="en">No</td><td data-lang="es">No</td><td>-</td></tr>
-    <tr><td class="text-primary">Aider</td><td colspan="2">pip install aider-chat</td><td data-lang="en">No</td><td data-lang="es">No</td><td>-</td></tr>
-  </table>
-</div>
-
-<!-- CONFIG -->
-<div class="section" id="config">
-  <h2 class="section-title"><span class="bar"></span> <span data-lang="en">Configuration</span><span data-lang="es">Configuraci&oacute;n</span></h2>
-  <div class="card">
-    <h3 style="font-size:16px;font-weight:800;text-transform:uppercase;color:var(--primary);margin-bottom:12px">API Keys</h3>
-    <p class="text-secondary" style="font-size:12px;margin-bottom:16px" data-lang="en">Set env vars or use Settings panel. Keys stored in system keychain.</p>
-    <p class="text-secondary" style="font-size:12px;margin-bottom:16px" data-lang="es">Define variables de entorno o usa el panel de Ajustes.</p>
-    <div class="terminal">export ANTHROPIC_API_KEY=sk-...<br>export OPENAI_API_KEY=sk-...<br>export DEEPSEEK_API_KEY=sk-...</div>
-  </div>
-  <div class="card">
-    <h3 style="font-size:16px;font-weight:800;text-transform:uppercase;color:var(--primary);margin-bottom:12px">Priority List</h3>
-    <p class="text-secondary" style="font-size:12px;margin-bottom:16px" data-lang="en">Models tried in order. Falls back automatically on failure.</p>
-    <p class="text-secondary" style="font-size:12px;margin-bottom:16px" data-lang="es">Modelos en orden de prioridad. Fallback autom&aacute;tico.</p>
-    <div class="terminal">1. anthropic/claude-sonnet-5 <span class="comment">#</span> <span data-lang="en">cloud, needs API key</span><span data-lang="es">cloud, necesita API key</span><br>2. deepseek/deepseek-v4-flash <span class="comment">#</span> <span data-lang="en">cloud, needs your own DeepSeek key</span><span data-lang="es">cloud, necesita tu propia key de DeepSeek</span><br>3. ollama/llama3.2:3b <span class="comment">#</span> <span data-lang="en">local, free if Ollama is running</span><span data-lang="es">local, gratis si Ollama est&aacute; corriendo</span></div>
-    <p class="text-secondary" style="font-size:11px;margin-top:12px" data-lang="en"><code>deepseek/*</code> is the DeepSeek cloud provider (your own API key) — different from <code>freebuff/*</code>, which only appears in the list if you enable free mode in Settings.</p>
-    <p class="text-secondary" style="font-size:11px;margin-top:12px" data-lang="es"><code>deepseek/*</code> es el proveedor cloud de DeepSeek (tu propia API key) — distinto de <code>freebuff/*</code>, que solo aparece en la lista si activas el modo gratuito en Ajustes.</p>
-  </div>
-</div>
-
-<!-- SECURITY -->
-<div class="section" id="security">
-  <h2 class="section-title"><span class="bar"></span> <span data-lang="en">Security</span><span data-lang="es">Seguridad</span></h2>
-  <div class="card">
-    <p class="text-secondary" style="font-size:12px" data-lang="en">API keys and credentials are automatically censored from logs and tool outputs before reaching the AI model. Three permission levels available.</p>
-    <p class="text-secondary" style="font-size:12px" data-lang="es">Las API keys se censuran autom&aacute;ticamente de los logs antes de llegar al modelo de IA.</p>
-  </div>
-</div>
-
-<!-- VAULT -->
-<div class="section" id="vault">
-  <h2 class="section-title"><span class="bar"></span> Alexandria Vault</h2>
-  <p class="text-secondary" style="font-size:12px;margin-bottom:16px;line-height:1.6" data-lang="en">Every lesson learned is stored in a persistent local vault with FTS5 search. Past solutions are recalled automatically when similar tasks appear.</p>
-  <p class="text-secondary" style="font-size:12px;margin-bottom:16px;line-height:1.6" data-lang="es">Cada lecci&oacute;n se guarda en una b&oacute;veda persistente con b&uacute;squeda FTS5.</p>
-  <div class="grid-3">
-    <div class="grid-item"><div class="label">LESSON</div><div class="text-primary" style="font-size:12px;margin-top:4px">Auth proxies need middleware</div></div>
-    <div class="grid-item"><div class="label">PLAYBOOK</div><div class="text-primary" style="font-size:12px;margin-top:4px">Deploy proxy infrastructure</div></div>
-    <div class="grid-item"><div class="label">SESSION</div><div class="text-primary" style="font-size:12px;margin-top:4px">Fix cold start latency</div></div>
-  </div>
-</div>
-
-<!-- FOOTER -->
-<div class="footer">
-  <div>
-    <h3 style="font-family:Montserrat,sans-serif;font-size:16px;font-weight:900;text-transform:uppercase;color:var(--primary-dim);margin-bottom:8px">Mimir CLI</h3>
-    <p class="text-muted" style="font-size:11px" data-lang="en">Built by Uriel Gomez Becerril. MIT License.</p>
-    <p class="text-muted" style="font-size:11px" data-lang="es">Creado por Uriel Gomez Becerril. MIT License.</p>
-  </div>
-  <div style="display:flex;gap:48px;flex-wrap:wrap">
+<footer>
+  <div class="foot">
+    <div>
+      <h4 class="runes">ᛗ Mímir</h4>
+      <p class="credit" data-i="es">Agente autónomo de código. Creado por Uriel Gómez Becerril. Licencia MIT.</p>
+      <p class="credit" data-i="en">Autonomous coding agent. Built by Uriel Gómez Becerril. MIT License.</p>
+    </div>
     <div class="col">
-      <h4 data-lang="en">Links</h4><h4 data-lang="es">Enlaces</h4>
+      <span class="h" data-i="es">Enlaces</span><span class="h" data-i="en">Links</span>
       <a href="https://github.com/UreckChan/mimir-cli">GitHub</a>
       <a href="https://www.npmjs.com/package/mimir-cli">npm</a>
-      <a href="https://github.com/UreckChan/mimir-cli/blob/main/docs/MIMIR.md" data-lang="en">Full docs (MIMIR.md)</a>
-      <a href="https://github.com/UreckChan/mimir-cli/blob/main/docs/MIMIR.md" data-lang="es">Doc completa (MIMIR.md)</a>
-      <a href="https://github.com/UreckChan">@UreckChan</a>
+      <a href="https://github.com/UreckChan/mimir-cli/releases/latest" data-i="es">Última release</a>
+      <a href="https://github.com/UreckChan/mimir-cli/releases/latest" data-i="en">Latest release</a>
     </div>
     <div class="col">
-      <h4>Tech</h4>
-      <span style="font-size:11px;color:var(--text-secondary);display:block;margin-bottom:4px">Bun · Tauri v2 · React</span>
+      <span class="h" data-i="es">Documentación</span><span class="h" data-i="en">Docs</span>
+      <a href="https://github.com/UreckChan/mimir-cli/blob/main/docs/MIMIR.md">MIMIR.md</a>
+      <a href="https://github.com/UreckChan/mimir-cli/blob/main/docs/MIMIR-generated.md" data-i="es">Generada del código</a>
+      <a href="https://github.com/UreckChan/mimir-cli/blob/main/docs/MIMIR-generated.md" data-i="en">Generated from source</a>
+    </div>
+    <div class="col">
+      <span class="h">Tech</span>
+      <span>Bun · Tauri v2 · React</span>
+      <span>bun:sqlite · Vercel AI SDK</span>
     </div>
   </div>
-</div>
-
-</div>
+</footer>
 
 <script>
-// Providers & Terminals data (injected via JS to avoid repetition)
-const providers = [
-  ["Freebuff", "Cloud", "Free (ads)", "#00FF41"],
-  ["Ollama", "Local", "Free", "#00FF41"],
-  ["Anthropic", "Cloud", "API key", "#38bdf8"],
-  ["OpenAI", "Cloud", "API key", "#38bdf8"],
-  ["Google", "Cloud", "API key", "#38bdf8"],
-  ["DeepSeek", "Cloud", "API key", "#ff7b00"],
-  ["xAI (Grok)", "Cloud", "API key", "#ff7b00"],
-  ["Custom", "Any", "Configurable", "#b9ccb2"],
-];
-document.getElementById('providers-grid').innerHTML = providers.map(p =>
-  '<div class="grid-item"><div class="text-primary" style="color:' + p[3] + ';font-weight:700;font-size:12px">' + p[0] + '</div><div class="label mt-2">' + p[1] + '</div><div class="text-secondary" style="font-size:10px;margin-top:4px">' + p[2] + '</div></div>'
-).join('');
+  // Single source of truth for version + download links.
+  const VERSION = "1.0.5";
+  const TAG = "v" + VERSION;
+  const REL = "https://github.com/UreckChan/mimir-cli/releases/download/" + TAG + "/";
 
-function toggleSidebar() {
-  document.getElementById('sidebar').classList.toggle('open');
-  document.getElementById('sidebar-overlay').classList.toggle('open');
-}
+  const cli = [
+    { os: "macOS",   file: "mimir-macos-arm64",       meta: "Apple Silicon · ~65 MB" },
+    { os: "Linux",   file: "mimir-linux-x64",          meta: "x86_64 · ~94 MB" },
+    { os: "Windows", file: "mimir-windows-x64.exe",    meta: "x64 · ~98 MB" },
+  ];
+  const desktop = [
+    { os: "macOS",   file: "Mimir_" + VERSION + "_aarch64.dmg",   meta: "Apple Silicon · .dmg" },
+    { os: "Linux",   file: "Mimir_" + VERSION + "_amd64.deb",     metaHtml: 'x86_64 · <a href="' + REL + 'Mimir-' + VERSION + '-1.x86_64.rpm">.rpm</a>' },
+    { os: "Windows", file: "Mimir_" + VERSION + "_x64_en-US.msi", metaHtml: 'x64 · <a href="' + REL + 'Mimir_' + VERSION + '_x64-setup.exe">setup.exe</a>' },
+  ];
+  const tile = (d) => '<a class="dl" href="' + REL + d.file + '">'
+      + '<span class="os">' + d.os + '</span>'
+      + '<span class="file">' + d.file + '</span>'
+      + '<span class="meta">' + (d.metaHtml || d.meta) + '</span></a>';
+  document.getElementById('cli-downloads').innerHTML = cli.map(tile).join('');
+  document.getElementById('desktop-downloads').innerHTML = desktop.map(tile).join('');
+  document.getElementById('verPill').textContent = TAG;
 
-function setLang(lang) {
-  document.documentElement.className = lang === 'es' ? 'lang-es' : 'lang-en';
-  document.getElementById('lben').style.background = lang === 'en' ? 'rgba(0,230,57,0.1)' : 'transparent';
-  document.getElementById('lben').style.color = lang === 'en' ? '#00e639' : '#6b6b80';
-  document.getElementById('lbes').style.background = lang === 'es' ? 'rgba(0,230,57,0.1)' : 'transparent';
-  document.getElementById('lbes').style.color = lang === 'es' ? '#00e639' : '#6b6b80';
-  try { localStorage.setItem('mimir-docs-lang', lang); } catch {}
-}
+  const providers = [
+    ["Ollama", "es:Local · gratis", "en:Local · free", "var(--ok)"],
+    ["Freebuff", "es:Cloud · gratis", "en:Cloud · free", "var(--ok)"],
+    ["Anthropic", "es:Cloud · API key", "en:Cloud · API key", "var(--arch)"],
+    ["OpenAI", "es:Cloud · API key", "en:Cloud · API key", "var(--arch)"],
+    ["Google", "es:Cloud · API key", "en:Cloud · API key", "var(--arch)"],
+    ["DeepSeek", "es:Cloud · API key", "en:Cloud · API key", "var(--insp)"],
+    ["xAI (Grok)", "es:Cloud · API key", "en:Cloud · API key", "var(--insp)"],
+    ["Custom", "es:OpenAI-compatible", "en:OpenAI-compatible", "var(--muted)"],
+  ];
+  document.getElementById('providers-grid').innerHTML = providers.map(p => {
+    const es = p[1].slice(3), en = p[2].slice(3);
+    return '<div class="tile"><div class="v" style="color:' + p[3] + ';font-weight:600">' + p[0] + '</div>'
+      + '<div class="k" style="margin-top:6px" data-i="es">' + es + '</div>'
+      + '<div class="k" style="margin-top:6px" data-i="en">' + en + '</div></div>';
+  }).join('');
 
-// Restore saved language
-try {
-  const saved = localStorage.getItem('mimir-docs-lang');
-  if (saved === 'en' || saved === 'es') setLang(saved);
-  else setLang('en');
-} catch { setLang('en'); }
+  // Language
+  function setLang(l) {
+    document.documentElement.setAttribute('data-lang', l);
+    document.getElementById('btn-es').classList.toggle('on', l === 'es');
+    document.getElementById('btn-en').classList.toggle('on', l === 'en');
+    try { localStorage.setItem('mimir-lang', l); } catch (e) {}
+  }
+  (function () {
+    let l = 'es';
+    try { const s = localStorage.getItem('mimir-lang'); if (s === 'en' || s === 'es') l = s; } catch (e) {}
+    setLang(l);
+  })();
+
+  // Mobile nav
+  function toggleNav() {
+    document.getElementById('sidebar').classList.toggle('open');
+    document.getElementById('scrim').classList.toggle('open');
+  }
+  document.getElementById('menuBtn').addEventListener('click', toggleNav);
+  document.querySelectorAll('.sidebar a').forEach(a => a.addEventListener('click', () => {
+    if (window.innerWidth <= 900) toggleNav();
+  }));
+
+  // Copy buttons
+  document.querySelectorAll('.copy').forEach(b => b.addEventListener('click', () => {
+    navigator.clipboard.writeText(b.dataset.copy).then(() => {
+      const t = b.textContent; b.textContent = '✓'; setTimeout(() => b.textContent = t, 1200);
+    }).catch(() => {});
+  }));
+
+  // Scroll-spy for sidebar
+  const links = [...document.querySelectorAll('.sidebar a')];
+  const map = {}; links.forEach(a => map[a.getAttribute('href').slice(1)] = a);
+  const spy = new IntersectionObserver((entries) => {
+    entries.forEach(e => {
+      if (e.isIntersecting) {
+        links.forEach(a => a.classList.remove('active'));
+        if (map[e.target.id]) map[e.target.id].classList.add('active');
+      }
+    });
+  }, { rootMargin: '-45% 0px -50% 0px' });
+  document.querySelectorAll('.section').forEach(s => spy.observe(s));
 </script>
 </body>
 </html>
