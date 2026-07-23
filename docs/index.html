@@ -165,12 +165,15 @@
   .card.pad-lg { padding: 24px; }
 
   /* download tiles */
-  .dl { display: flex; flex-direction: column; gap: 5px; background: var(--stone); border: 1px solid var(--line); border-radius: 12px; padding: 18px; transition: border-color 0.15s ease, transform 0.12s ease, background 0.15s ease; }
-  .dl:hover { border-color: var(--gold-dim); background: var(--stone-2); transform: translateY(-2px); text-decoration: none; }
-  .dl .os { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted); }
-  .dl .file { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: var(--gold); word-break: break-all; }
-  .dl .meta { font-size: 12px; color: var(--muted); }
-  .dl .meta a { font-size: 12px; }
+  .dl { display: flex; flex-direction: column; gap: 12px; background: var(--stone); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+  .dl .os { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+  .dl .os .name { font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--parch); }
+  .dl .os .arch { font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: var(--muted); }
+  .dl-files { display: flex; flex-direction: column; gap: 8px; }
+  .dl-link { display: flex; align-items: center; gap: 11px; padding: 9px 12px; border: 1px solid var(--line); border-radius: 9px; background: var(--ink); transition: border-color 0.14s ease, background 0.14s ease, transform 0.12s ease; }
+  .dl-link:hover { border-color: var(--gold-dim); background: var(--stone-2); transform: translateX(2px); text-decoration: none; }
+  .dl-link .fmt { flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-size: 11px; font-weight: 500; color: var(--gold); background: rgba(60,224,122,0.10); border: 1px solid var(--gold-dim); border-radius: 6px; padding: 2px 8px; min-width: 72px; text-align: center; }
+  .dl-link .fname { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--parch-2); word-break: break-all; line-height: 1.35; }
 
   .role { background: var(--stone); border: 1px solid var(--line); border-radius: 12px; padding: 20px; position: relative; }
   .role .rune { position: absolute; top: 16px; right: 18px; font-family: 'Fraunces', serif; font-size: 26px; color: var(--gold-dim); }
@@ -284,8 +287,7 @@
   <section class="hero">
     <div class="glyph runes">ᛗ</div>
     <div class="wrap">
-      <span class="eyebrow" data-i="es">El Necio · pozo del conocimiento</span>
-      <span class="eyebrow" data-i="en">The Blunt One · well of wisdom</span>
+      <span class="eyebrow"><span data-i="es">El Necio · pozo del conocimiento</span><span data-i="en">The Blunt One · well of wisdom</span></span>
       <h1><span data-i="es">Un agente que <span class="em">termina</span> el trabajo.</span><span data-i="en">An agent that <span class="em">finishes</span> the job.</span></h1>
       <p class="tag" data-i="es">Cuatro roles —Arquitecto, Albañil, Inspector, Cronista— trabajan en ciclo <strong>PLAN → STEP → VERIFY → LEARN</strong> hasta que el código pasa. Corre en tu terminal o como app de escritorio. Multi-modelo, memoria persistente, y te dice la verdad sin rodeos.</p>
       <p class="tag" data-i="en">Four roles —Architect, Builder, Inspector, Chronicler— work a <strong>PLAN → STEP → VERIFY → LEARN</strong> loop until the code passes. Runs in your terminal or as a desktop app. Multi-model, persistent memory, and blunt about what's wrong.</p>
@@ -637,22 +639,27 @@ Trusted comment: file:Mímir_1.0.5_x64_en-US.msi</div>
   const TAG = "v" + VERSION;
   const REL = "https://github.com/UreckChan/mimir-cli/releases/download/" + TAG + "/";
 
+  // Terminal (TUI): one portable binary per OS.
   const cli = [
-    { os: "macOS",   file: "mimir-macos-arm64",       meta: "Apple Silicon · ~65 MB" },
-    { os: "Linux",   file: "mimir-linux-x64",          meta: "x86_64 · ~94 MB" },
-    { os: "Windows", file: "mimir-windows-x64.exe",    meta: "x64 · ~98 MB" },
+    { os: "macOS",   arch: "Apple Silicon", files: [["binario", "mimir-macos-arm64"]] },
+    { os: "Linux",   arch: "x86_64",        files: [["binario", "mimir-linux-x64"]] },
+    { os: "Windows", arch: "x64",           files: [["binario", "mimir-windows-x64.exe"]] },
   ];
+  // Desktop: installers grouped by OS (Windows: msi+exe, Linux: deb+rpm).
   const desktop = [
-    { os: "macOS",   file: "Mimir_" + VERSION + "_aarch64.dmg",   meta: "Apple Silicon · .dmg" },
-    { os: "Linux",   file: "Mimir_" + VERSION + "_amd64.deb",     metaHtml: 'x86_64 · <a href="' + REL + 'Mimir-' + VERSION + '-1.x86_64.rpm">.rpm</a>' },
-    { os: "Windows", file: "Mimir_" + VERSION + "_x64_en-US.msi", metaHtml: 'x64 · <a href="' + REL + 'Mimir_' + VERSION + '_x64-setup.exe">setup.exe</a>' },
+    { os: "macOS",   arch: "Apple Silicon", files: [[".dmg", "Mimir_" + VERSION + "_aarch64.dmg"]] },
+    { os: "Linux",   arch: "x86_64",        files: [[".deb", "Mimir_" + VERSION + "_amd64.deb"], [".rpm", "Mimir-" + VERSION + "-1.x86_64.rpm"]] },
+    { os: "Windows", arch: "x64",           files: [[".msi", "Mimir_" + VERSION + "_x64_en-US.msi"], ["setup.exe", "Mimir_" + VERSION + "_x64-setup.exe"]] },
   ];
-  const tile = (d) => '<a class="dl" href="' + REL + d.file + '">'
-      + '<span class="os">' + d.os + '</span>'
-      + '<span class="file">' + d.file + '</span>'
-      + '<span class="meta">' + (d.metaHtml || d.meta) + '</span></a>';
-  document.getElementById('cli-downloads').innerHTML = cli.map(tile).join('');
-  document.getElementById('desktop-downloads').innerHTML = desktop.map(tile).join('');
+  const card = (d) => {
+    const links = d.files.map(f =>
+      '<a class="dl-link" href="' + REL + f[1] + '"><span class="fmt">' + f[0] + '</span><span class="fname">' + f[1] + '</span></a>'
+    ).join('');
+    return '<div class="dl"><div class="os"><span class="name">' + d.os + '</span><span class="arch">' + d.arch + '</span></div>'
+      + '<div class="dl-files">' + links + '</div></div>';
+  };
+  document.getElementById('cli-downloads').innerHTML = cli.map(card).join('');
+  document.getElementById('desktop-downloads').innerHTML = desktop.map(card).join('');
   document.getElementById('verPill').textContent = TAG;
 
   const providers = [
@@ -685,15 +692,42 @@ Trusted comment: file:Mímir_1.0.5_x64_en-US.msi</div>
     setLang(l);
   })();
 
-  // Mobile nav
-  function toggleNav() {
-    document.getElementById('sidebar').classList.toggle('open');
-    document.getElementById('scrim').classList.toggle('open');
-  }
+  // Sidebar open/close (mobile)
+  const sidebar = document.getElementById('sidebar');
+  const scrim = document.getElementById('scrim');
+  function openNav()  { sidebar.classList.add('open'); scrim.classList.add('open'); }
+  function closeNav() { sidebar.classList.remove('open'); scrim.classList.remove('open'); }
+  function toggleNav(){ sidebar.classList.contains('open') ? closeNav() : openNav(); }
   document.getElementById('menuBtn').addEventListener('click', toggleNav);
-  document.querySelectorAll('.sidebar a').forEach(a => a.addEventListener('click', () => {
-    if (window.innerWidth <= 900) toggleNav();
+  scrim.addEventListener('click', closeNav);
+
+  // Header height so sections don't hide behind the fixed bar
+  const HDR = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--hdr')) || 60;
+  const sidebarLinks = [...document.querySelectorAll('.sidebar a[href^="#"]')];
+  const byId = {}; sidebarLinks.forEach(a => byId[a.getAttribute('href').slice(1)] = a);
+
+  function goTo(id, push) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    const y = el.getBoundingClientRect().top + window.scrollY - HDR - 8;
+    window.scrollTo({ top: y, behavior: 'smooth' });
+    if (push) history.replaceState(null, '', '#' + id);
+  }
+
+  // Explicit scroll on click — works in full screen and mobile, no anchor quirks
+  document.querySelectorAll('a[href^="#"]').forEach(a => a.addEventListener('click', (ev) => {
+    const id = a.getAttribute('href').slice(1);
+    if (!document.getElementById(id)) return;
+    ev.preventDefault();
+    if (window.innerWidth <= 900) closeNav();
+    goTo(id, true);
   }));
+
+  // Jump to hash on load (after layout settles)
+  if (location.hash.length > 1) {
+    const id = location.hash.slice(1);
+    requestAnimationFrame(() => setTimeout(() => goTo(id, false), 60));
+  }
 
   // Copy buttons
   document.querySelectorAll('.copy').forEach(b => b.addEventListener('click', () => {
@@ -702,14 +736,12 @@ Trusted comment: file:Mímir_1.0.5_x64_en-US.msi</div>
     }).catch(() => {});
   }));
 
-  // Scroll-spy for sidebar
-  const links = [...document.querySelectorAll('.sidebar a')];
-  const map = {}; links.forEach(a => map[a.getAttribute('href').slice(1)] = a);
+  // Scroll-spy: highlight the section currently in view
   const spy = new IntersectionObserver((entries) => {
     entries.forEach(e => {
-      if (e.isIntersecting) {
-        links.forEach(a => a.classList.remove('active'));
-        if (map[e.target.id]) map[e.target.id].classList.add('active');
+      if (e.isIntersecting && byId[e.target.id]) {
+        sidebarLinks.forEach(a => a.classList.remove('active'));
+        byId[e.target.id].classList.add('active');
       }
     });
   }, { rootMargin: '-45% 0px -50% 0px' });
