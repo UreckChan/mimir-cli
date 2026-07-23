@@ -17,10 +17,10 @@
     --stone-3:  #1e242c;   /* hover */
     --line:     #262d36;   /* hairline */
     --line-2:   #333c47;
-    --gold:     #d4a95a;   /* rune inlay — THE accent */
-    --gold-dim: #a8814080;
-    --parch:    #e9e3d5;   /* aged vellum — primary text */
-    --parch-2:  #bdb8ac;   /* body */
+    --gold:     #3ce07a;   /* verde de marca — THE accent */
+    --gold-dim: #2f9c5a80;
+    --parch:    #e8ebe6;   /* off-white frío — primary text */
+    --parch-2:  #b3bcb4;   /* body */
     --muted:    #7c8593;   /* captions */
     --ok:       #7fb59a;
     --warn:     #d8b45a;
@@ -45,10 +45,10 @@
   body::before {
     content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 0;
     background:
-      radial-gradient(60% 45% at 78% -5%, rgba(212,169,90,0.06), transparent 70%),
+      radial-gradient(60% 45% at 78% -5%, rgba(60,224,122,0.07), transparent 70%),
       radial-gradient(50% 40% at 0% 100%, rgba(143,183,207,0.05), transparent 70%);
   }
-  ::selection { background: rgba(212,169,90,0.25); color: var(--parch); }
+  ::selection { background: rgba(60,224,122,0.24); color: var(--parch); }
   ::-webkit-scrollbar { width: 9px; height: 9px; }
   ::-webkit-scrollbar-track { background: var(--ink); }
   ::-webkit-scrollbar-thumb { background: var(--line-2); border-radius: 6px; }
@@ -74,7 +74,7 @@
     width: 34px; height: 34px; display: grid; place-items: center; flex-shrink: 0;
     border: 1px solid var(--gold-dim); border-radius: 8px;
     color: var(--gold); font-family: 'Fraunces', serif; font-size: 20px; font-weight: 600;
-    background: linear-gradient(160deg, rgba(212,169,90,0.12), transparent);
+    background: linear-gradient(160deg, rgba(60,224,122,0.14), transparent);
   }
   .brand-name { font-family: 'Fraunces', serif; font-size: 18px; font-weight: 600; color: var(--parch); letter-spacing: 0.01em; }
   .ver-pill { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--gold); border: 1px solid var(--gold-dim); border-radius: 999px; padding: 2px 9px; }
@@ -84,7 +84,7 @@
     font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.1em;
     padding: 5px 10px; background: transparent; color: var(--muted); border: 0; cursor: pointer;
   }
-  .lang-toggle button.on { background: rgba(212,169,90,0.14); color: var(--gold); }
+  .lang-toggle button.on { background: rgba(60,224,122,0.16); color: var(--gold); }
   .hdr-gh { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--parch-2); }
   .hdr-gh:hover { color: var(--gold); text-decoration: none; }
   @media (max-width: 720px) { .hdr-gh { display: none; } }
@@ -103,7 +103,7 @@
     font-size: 13.5px; color: var(--parch-2); border-left: 2px solid transparent;
   }
   .sidebar a:hover { color: var(--parch); background: var(--stone-2); text-decoration: none; }
-  .sidebar a.active { color: var(--gold); border-left-color: var(--gold); background: linear-gradient(90deg, rgba(212,169,90,0.08), transparent); }
+  .sidebar a.active { color: var(--gold); border-left-color: var(--gold); background: linear-gradient(90deg, rgba(60,224,122,0.10), transparent); }
   .sidebar a .idx { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); width: 16px; }
   .sidebar a.active .idx { color: var(--gold); }
 
@@ -121,7 +121,7 @@
   .hero .glyph {
     position: absolute; right: -2vw; top: 50%; transform: translateY(-50%);
     font-family: 'Fraunces', serif; font-size: clamp(200px, 34vw, 460px); line-height: 1;
-    color: transparent; -webkit-text-stroke: 1px rgba(212,169,90,0.14); pointer-events: none; user-select: none;
+    color: transparent; -webkit-text-stroke: 1px rgba(60,224,122,0.16); pointer-events: none; user-select: none;
   }
   .hero .eyebrow { display: inline-block; margin-bottom: 20px; }
   .hero h1 { font-size: clamp(2.4rem, 6.2vw, 4.4rem); max-width: 15ch; }
@@ -134,8 +134,8 @@
   /* ── Buttons ────────────────────────────── */
   .btn { display: inline-flex; align-items: center; gap: 8px; font-family: 'IBM Plex Sans', sans-serif; font-size: 14px; font-weight: 600; padding: 11px 22px; border-radius: 9px; cursor: pointer; border: 1px solid transparent; transition: transform 0.12s ease, background 0.15s ease; }
   .btn:hover { text-decoration: none; transform: translateY(-1px); }
-  .btn-gold { background: var(--gold); color: #241a08; }
-  .btn-gold:hover { background: #e0b869; }
+  .btn-gold { background: var(--gold); color: #062012; }
+  .btn-gold:hover { background: #5aec93; }
   .btn-ghost { border-color: var(--line-2); color: var(--parch); background: var(--stone); }
   .btn-ghost:hover { border-color: var(--gold-dim); color: var(--gold); }
 
