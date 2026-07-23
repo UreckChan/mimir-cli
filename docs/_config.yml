@@ -1,0 +1,7 @@
+# Mímir Docs — GitHub Pages config (static HTML, no Jekyll)
+# The .nojekyll file disables Jekyll; this file exists only for
+# GitHub Pages metadata detection.
+
+title: Mímir el Necio
+description: Agente autónomo de código con 4 roles. Loop PLAN→STEP→VERIFY→LEARN, compresión Caveman, bóveda de memoria, multi-modelo.
+author: Uriel Gomez Becerril (@UreckChan)

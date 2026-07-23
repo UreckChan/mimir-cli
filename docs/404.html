@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>404 — Página no encontrada · Mímir</title>
+  <meta name="description" content="La página que buscas no existe. Quizás fue movida, renombrada o nunca existió.">
+  <meta name="theme-color" content="#0a0a0a">
+  <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg: #0a0a0a;
+      --surface: #131313;
+      --border: #2a2a3e;
+      --text: #d4d4d8;
+      --textDim: #6b6b80;
+      --accent: #5a9a5a;
+      --accentBright: #00e639;
+      --error: #e63946;
+      --radius: 12px;
+      --font: 'SF Mono', 'Fira Code', 'JetBrains Mono', 'Cascadia Code', monospace;
+    }
+    @media (prefers-color-scheme: light) {
+      :root {
+        --bg: #f5f5f0;
+        --surface: #ffffff;
+        --border: #d0d0c8;
+        --text: #1a1a1a;
+        --textDim: #6b6b6b;
+        --accent: #2d7d2d;
+        --accentBright: #006400;
+        --error: #cc2222;
+      }
+    }
+    html { font-size: 16px; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font);
+      line-height: 1.6;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem;
+    }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 3rem 2.5rem;
+      max-width: 480px;
+      width: 100%;
+      text-align: center;
+    }
+    .rune { font-size: 3.5rem; display: block; opacity: .25; margin-bottom: .5rem; }
+    h1 { font-size: 4rem; font-weight: 700; line-height: 1; margin-bottom: .25rem; }
+    .sub { font-size: .95rem; color: var(--textDim); margin-bottom: 2rem; }
+    .detail {
+      font-size: .82rem;
+      color: var(--textDim);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: .75rem 1rem;
+      margin-bottom: 2rem;
+      word-break: break-all;
+    }
+    .detail code { font-size: .82rem; color: var(--error); }
+    .links { display: flex; gap: .75rem; justify-content: center; flex-wrap: wrap; }
+    .links a {
+      display: inline-flex; align-items: center; gap: .4rem;
+      padding: .55rem 1.1rem; border-radius: var(--radius);
+      font-size: .82rem; font-weight: 600; text-decoration: none;
+      transition: all .2s;
+    }
+    .btn-primary {
+      background: var(--accent); color: #fff; border: 1px solid var(--accent);
+    }
+    .btn-primary:hover { background: var(--accentBright); }
+    .btn-secondary {
+      background: transparent; color: var(--text); border: 1px solid var(--border);
+    }
+    .btn-secondary:hover { border-color: var(--accent); }
+    footer { margin-top: 2rem; font-size: .72rem; color: var(--textDim); }
+    footer a { color: var(--textDim); }
+    footer a:hover { color: var(--accentBright); }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <span class="rune">ᛗ</span>
+  <h1>404</h1>
+  <p class="sub">Esa página no existe, mi rey.</p>
+
+  <div class="detail">
+    <code id="path-display">---</code>
+  </div>
+
+  <div class="links">
+    <a href="./index.html" class="btn-primary">🏠 Inicio</a>
+    <a href="./MIMIR.md" class="btn-secondary">📖 Docs</a>
+    <a href="https://github.com/UreckChan/mimir-cli" class="btn-secondary">🐙 GitHub</a>
+  </div>
+</div>
+
+<footer>
+  <p><a href="https://github.com/UreckChan/mimir-cli">Mímir el Necio</a> · MIT © 2026</p>
+</footer>
+
+<script>
+  // Mostrar la ruta que intentó acceder el usuario
+  document.getElementById('path-display').textContent = window.location.pathname;
+</script>
+
+</body>
+</html>
