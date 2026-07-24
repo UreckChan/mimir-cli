@@ -1,12 +1,24 @@
 # Mímir el Necio — Documentación Completa
 
-**Versión:** 1.0.6  
+**Versión:** 1.0.7  
 **Autor:** Uriel Gomez Becerril [@UreckChan](https://github.com/UreckChan)  
 **Repositorio privado:** [`UreckChan/mimir`](https://github.com/UreckChan/mimir) — monorepo con 7 packages + 2 apps  
 **Repositorio público:** [`UreckChan/mimir-cli`](https://github.com/UreckChan/mimir-cli) — wrapper npm + binarios  
 **Package npm:** [`mimir-cli`](https://www.npmjs.com/package/mimir-cli)  
 **Docs site:** https://ureckchan.github.io/mimir-cli/  
 **Licencia:** MIT
+
+---
+
+## Novedades v1.0.7
+
+Release de corrección: la app de escritorio arrastraba cuatro fallos que solo aparecían al usarla desde el ícono, no al correrla desde la terminal.
+
+- **PATH real del usuario.** macOS lanza la `.app` con un PATH mínimo y sin ejecutar el perfil de la shell, así que Homebrew, npm global y bun quedaban invisibles. Resultado: la detección de terminales devolvía cero — no se podía elegir Claude Code, Codex, OpenCode ni Aider aunque estuvieran instaladas — y `ripgrep` no se encontraba. Mímir ahora resuelve el PATH de tu shell de login al arrancar. Medido con el PATH de Finder: 0 terminales detectadas antes, 3 después.
+- **El shell persistente ya no muere para siempre.** Tras un timeout, todo comando posterior fallaba con `PersistentShell no iniciado` durante el resto de la sesión. Ahora revive solo.
+- **El shell persistente sí conserva estado.** Los comandos se envolvían en un subshell, así que `export` y `cd` se descartaban — justo lo que debía persistir.
+- **Búsqueda sin dependencias externas.** `glob` y `grep` se reimplementaron nativos sobre `Bun.Glob`; ya no invocan `ripgrep` como subproceso, conforme a la política de dependencias del proyecto.
+- **Selector de terminal completo.** Se agregaron Gemini CLI, Goose y OpenHands, y el aviso de "no instalado" ahora cubre todas las CLIs con su comando de instalación.
 
 ---
 
