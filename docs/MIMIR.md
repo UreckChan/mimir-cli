@@ -1,12 +1,24 @@
 # Mímir el Necio — Documentación Completa
 
-**Versión:** 1.0.4  
+**Versión:** 1.0.6  
 **Autor:** Uriel Gomez Becerril [@UreckChan](https://github.com/UreckChan)  
 **Repositorio privado:** [`UreckChan/mimir`](https://github.com/UreckChan/mimir) — monorepo con 7 packages + 2 apps  
 **Repositorio público:** [`UreckChan/mimir-cli`](https://github.com/UreckChan/mimir-cli) — wrapper npm + binarios  
 **Package npm:** [`mimir-cli`](https://www.npmjs.com/package/mimir-cli)  
 **Docs site:** https://ureckchan.github.io/mimir-cli/  
 **Licencia:** MIT
+
+---
+
+## Novedades v1.0.6
+
+- **Modelo y credencial por rol.** Cada rol (Arquitecto/Albañil/Inspector/Cronista) puede usar un proveedor+modelo distinto y elegir de dónde salen sus credenciales: **API key**, **suscripción** (vía la CLI de la terminal: Claude Pro→Claude Code, ChatGPT→Codex), o mixto. Los modelos se filtran a los compatibles con la terminal elegida. Configurable desde Ajustes → "Modelos por rol".
+- **Fases del protocolo configurables.** Activa/desactiva por separado **Plan / Desarrollo / Revisión / Aprendizaje**. Cualquier combinación; Revisión off = se asume aprobado; sin ninguna fase = respuesta directa (modo chat), respetando la compresión caveman.
+- **Gate de aprobación del plan.** Dos modos: **Auto** (corre solo) o **Con aprobación** — tras la fase Plan, Mímir guarda el plan como `.md` (agrupado por chat en `~/.elcuartohombre/plans/<chat>/`), lo muestra, y no avanza a Desarrollo hasta que lo apruebes; puedes pedir cambios las veces necesarias (re-planea con tu feedback). En modo nocturno se auto-aprueba.
+- **Personalidad separada de la función.** El tono "El Cuarto Hombre" es ahora un solo toggle (**OFF por default**) que solo cambia cómo redacta — no toca las fases ni lo que hace.
+- **Contexto entre cambios de agente.** Un preámbulo compacto con el estado de la sesión viaja entre roles/fases para no perder el hilo al cambiar de agente/modelo, con trazabilidad persistida.
+- **Estados por rol en vivo** (idle / working / blocked / done) en el panel del loop.
+- **Sesión persistente + reattach.** El loop corre en el sidecar y sobrevive al cierre del cliente: la sesión se guarda en disco y puedes reconectar desde otra ventana y retomar el estado.
 
 ---
 
@@ -745,7 +757,7 @@ El `EventBus` emite eventos de seguridad como:
 - Tema oscuro/claro
 - Configuración visual de API keys, priority list, feature flags
 - Core como sidecar (WebSocket en :4317)
-- Instaladores: .dmg (macOS), .deb/.rpm (Linux). Windows (.msi) pendiente — ver limitaciones abajo.
+- Instaladores: .dmg (macOS), .deb/.rpm (Linux), .msi/-setup.exe (Windows, desde v1.0.5).
 
 ### Sidecar (`--serve`)
 
@@ -809,25 +821,17 @@ gh release create v1.0.X --repo UreckChan/mimir-cli \
 
 ## 11. Limitaciones actuales
 
-### Windows Desktop (.msi) no se genera
+### Windows Desktop (.msi) — RESUELTO en v1.0.5
 
-Windows Defender lockea `node_modules/.bun/` (caché content-addressable de Bun) después de `bun install`, causando EPERM en cualquier operación que lea de la caché. Esto afecta al `build-sidecar`, `vite build` y cualquier resolución de módulos en Windows CI.
+Windows Defender lockeaba `node_modules/.bun/` (caché content-addressable de Bun) después de `bun install`, causando EPERM en cualquier resolución de módulos en Windows CI. **Fix:** excluir el workspace y `~/.bun` de Defender con `Add-MpPreference -ExclusionPath` como primer step del job (los runners corren con admin), y sin cache de `node_modules` en Windows. El `.msi` y el `-setup.exe` (NSIS) compilan verdes en CI desde entonces.
 
-Intentos de fix agotados: `--ignore-scripts`, retry en sidecar, sidecar pre-compilado desde Linux, npm install (npm no soporta workspace:*). La raíz es un bug de Bun + Windows Defender en GitHub Actions runners.
+### Firma Tauri y updater.json — arreglado en pipeline, verificado con v1.0.5
 
-**Solución temporal:** El binario TUI de Windows se publica igual (compilado desde Linux). Para tener el `.msi`, hace falta compilar Tauri en Windows local o esperar fix de Bun.
-
-### Auto-updater sin firmar
-
-Los instaladores se publican sin firma criptográfica (la signing key es secreto de CI y el job `publish-release` no puede ejecutar `bunx tauri signer sign` porque no encuentra `@tauri-apps/cli`). El `updater.json` no se genera.
-
-**Impacto:** El auto-updater de la app desktop no funciona en esta versión. Hay que descargar manualmente.
-
-**Fix pendiente:** Configurar `working-directory: apps/desktop` en los pasos de sign y updater del job `publish-release`.
+En v1.0.4 el job `publish-release` fallaba en la firma: `bunx tauri` (sin scope) resuelve el package npm `tauri` — un stub sin binario — en vez de `@tauri-apps/cli`, que es dependencia de `apps/desktop`. **Fix:** firmar con `bun run --cwd apps/desktop tauri signer sign`. El `updater.json` se genera apuntando al repo público (`mimir-cli`), igual que el endpoint del plugin updater en `tauri.conf.json`.
 
 ### Linux sin auto-updater
 
-Tauri solo soporta auto-updater para AppImage en Linux. Como `linuxdeploy` está roto en Ubuntu 24.04 ([issue #14796](https://github.com/tauri-apps/tauri/issues/14796)), Linux se distribuye como `.deb` y `.rpm` sin auto-updater.
+Tauri solo soporta auto-updater para AppImage en Linux, y el AppImage es imposible por ahora: `linuxdeploy` (plugin GTK) corre `ldd` sobre todos los ELF de `usr/bin/` y el **sidecar compilado con `bun build --compile` hace que `ldd` salga con código 1**, lo que aborta linuxdeploy (`Failed to run ldd: exited with code 1`). Se verificó que pasa igual en Ubuntu 22.04 y 24.04 — no es (solo) el [issue #14796](https://github.com/tauri-apps/tauri/issues/14796) de Tauri. Mientras el sidecar sea un binario de Bun, Linux se distribuye como `.deb` y `.rpm` sin auto-updater.
 
 ### Sin firma de Apple Developer
 
@@ -942,6 +946,6 @@ Mímir/
 | npm | ✅ (mimir-cli v1.0.4 publicado) |
 | Desktop macOS | ✅ (.dmg compilado y publicado) |
 | Desktop Linux | ✅ (.deb + .rpm compilados y publicados) |
-| Desktop Windows | ❌ (.msi pendiente — EPERM Bun + Defender) |
+| Desktop Windows | ✅ (.msi compila en CI desde v1.0.5 — exclusión de Defender) |
 | Issues | 0 abiertos |
 | PRs | 0 abiertos |
