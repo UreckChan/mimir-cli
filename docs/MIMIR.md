@@ -1,12 +1,34 @@
 # Mímir el Necio — Documentación Completa
 
-**Versión:** 1.0.7  
+**Versión:** 1.0.8  
 **Autor:** Uriel Gomez Becerril [@UreckChan](https://github.com/UreckChan)  
 **Repositorio privado:** [`UreckChan/mimir`](https://github.com/UreckChan/mimir) — monorepo con 7 packages + 2 apps  
 **Repositorio público:** [`UreckChan/mimir-cli`](https://github.com/UreckChan/mimir-cli) — wrapper npm + binarios  
 **Package npm:** [`mimir-cli`](https://www.npmjs.com/package/mimir-cli)  
 **Docs site:** https://ureckchan.github.io/mimir-cli/  
 **Licencia:** MIT
+
+---
+
+## Novedades v1.0.8
+
+Release de corrección profunda: el agente dejaba de servir a media tarea y la app no dejaba rastro de lo que hacía. Se atacaron las causas, no los síntomas.
+
+**El loop deja de ciclarse.** Cada iteración arrancaba una conversación nueva y tiraba el historial de herramientas, así que el Albañil volvía a leer `package.json` y a correr `ls -la` en cada paso. Ahora conserva su hilo. Medido en la misma meta: 13 llamadas a herramientas antes, 10 después, y una lectura repetida ya no toca el disco — `read`, `glob` y `grep` se memorizan por argumentos dentro de una corrida.
+
+**Deja de colgarse.** Los comandos de verificación se ejecutaban sin timeout: un `npm test` que levantara un runner en modo watch dejaba el loop esperando para siempre, y PÁRAME no lo cortaba. Ahora corta, y además la verificación corre con `CI=1`, que evita el modo watch de entrada.
+
+**Deja de bloquearse en proyectos nuevos.** Sin script de `test`, `npm test` falla y eso consumía las 5 iteraciones hasta morir en "bloqueado". Ahora se distingue "no hay nada que verificar" de "los tests fallan": lo primero avanza avisando, lo segundo reintenta. Y un directorio sin proyecto detectable ya no pasa la verificación en falso.
+
+**Deja de reintentar a ciegas.** El resumen de verificación descartaba `stdout` y `stderr` y entregaba solo `FALLÓ test`. Ahora el Albañil recibe el error real, y a partir del segundo intento el encuadre cambia a "corrige exactamente esto, no vuelvas a explorar". Si dos intentos fallan idéntico, el loop corta en vez de gastar los cinco.
+
+**Plan es plan y Build es build, y se encadenan.** Plan corría el loop completo y escribía archivos pese a prometer lo contrario. Ahora solo planea, guarda el plan como `.md` y ofrece pasarlo a Build. El número de reintentos es configurable en Ajustes.
+
+**El historial se puede seguir.** Las claves de React salían del contenido del mensaje, así que dos mensajes que empezaran igual se mezclaban; los registros de un chat se pegaban en otro; el texto en streaming aparecía en la conversación equivocada; y los registros de depuración llenaban la cuota de almacenamiento hasta que las conversaciones dejaban de guardarse sin aviso. Todo cerrado. Las sesiones terminadas —que se guardaban completas y no las leía nadie— ahora se listan y se reabren.
+
+**El panel deja de mentir.** Las fases salen de lo configurado en Ajustes y con los mismos nombres; el gasto es real en vez de un gráfico fijo; el checklist en vivo se muestra; y se quitó la fila que duplicaba el selector de modo.
+
+**El release ya no puede quedar a medias.** El tag debe apuntar al HEAD de `main` — v1.0.7 se cortó sin arreglos ya mergeados — y un verificador comprueba que cada archivo del release público se pueda descargar antes de publicar a npm.
 
 ---
 
