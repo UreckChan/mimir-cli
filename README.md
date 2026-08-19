@@ -44,8 +44,8 @@ Mímir uses 4 specialized agents that work in a loop:
 | Mode | Description |
 |---|---|
 | Chat | Direct conversational response, no tools |
-| Plan | Full loop with detailed planning |
-| Build | Optimized loop for coding |
+| Plan | Explores read-only and hands you a plan. **Never modifies files**; offers to hand it to Build when done |
+| Build | Executes: writes code, runs commands and verifies |
 
 ### Failover
 
